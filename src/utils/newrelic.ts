@@ -73,7 +73,7 @@ const pushCustomMetric = (customMetrics: CustomMetric, meta: any): void => {
       environment: config.NODE_ENV,
       'host.name': config.HOSTNAME,
       region: config.REGION,
-      'client.id': meta?.clientId || 'unknown',
+      'client.id': meta?.detail?.clientId || meta?.detail,
       timestamp: moment().valueOf(),
     });
 

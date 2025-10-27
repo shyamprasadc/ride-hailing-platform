@@ -16,6 +16,8 @@ import {
   DriverInfo,
 } from '../core/Types';
 import Logger from '../core/Logger';
+import PerformanceMetric from '../core/PerformanceMetric';
+import { performance } from 'perf_hooks';
 import {
   cacheRide,
   getCachedRide,
@@ -117,12 +119,15 @@ const validateRideRequest = (request: CreateRideRequest): Result<true> => {
 const getSurgeMultiplier = async (lat: number, lng: number): Promise<number> => {
   try {
     // In production, check active surge zones from database
+    const PNow = performance.now().toString();
+    PerformanceMetric.startPerf('surge_lookup', PNow);
     const surgeZone = await prisma.surgeZone.findFirst({
       where: {
         isActive: true,
         // You'd check if lat/lng is within boundaries polygon here
       },
     });
+    PerformanceMetric.endPerf('surge_lookup', PNow);
 
     return surgeZone?.currentSurge || 1.0;
   } catch (error) {

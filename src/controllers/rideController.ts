@@ -27,7 +27,7 @@ const createRide = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Failed to create ride');
   }
 
-  return new SuccessResponse('OK', null).send(res);
+  return new SuccessResponse('OK', result.data).send(res);
 });
 
 /**
@@ -43,7 +43,7 @@ const getRide = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Failed to get ride');
   }
 
-  return new SuccessResponse('OK', null).send(res);
+  return new SuccessResponse('OK', result.data).send(res);
 });
 
 /**
@@ -64,7 +64,7 @@ const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Failed to get ride history');
   }
 
-  return new SuccessResponse('OK', null).send(res);
+  return new SuccessResponse('OK', result.data).send(res);
 });
 
 /**
@@ -86,7 +86,7 @@ const cancelRide = asyncHandler(async (req: Request, res: Response) => {
     throw new BadRequestError('Failed to get cancel ride');
   }
 
-  return new SuccessResponse('OK', null).send(res);
+  return new SuccessResponse('OK', result.data).send(res);
 });
 
 export default {

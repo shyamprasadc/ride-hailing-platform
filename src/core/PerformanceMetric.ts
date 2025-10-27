@@ -26,7 +26,7 @@ try {
 /**
  * Marks the start of a performance measurement.
  */
-export const startPerf = (type: string, uniqueBatchId: string, clientId?: string): void => {
+const startPerf = (type: string, uniqueBatchId: string, clientId?: string): void => {
   try {
     const startId = `${type}_start_${uniqueBatchId}`;
     performance.mark(startId, { detail: clientId });
@@ -38,7 +38,7 @@ export const startPerf = (type: string, uniqueBatchId: string, clientId?: string
 /**
  * Marks the end of a performance measurement and records duration.
  */
-export const endPerf = (type: string, uniqueBatchId: string, clientId?: string): void => {
+const endPerf = (type: string, uniqueBatchId: string, clientId?: string): void => {
   try {
     const startId = `${type}_start_${uniqueBatchId}`;
     const endId = `${type}_end_${uniqueBatchId}`;
@@ -48,4 +48,9 @@ export const endPerf = (type: string, uniqueBatchId: string, clientId?: string):
   } catch (err) {
     Logger.error('[PERF_METRIC] error at endPerf', err);
   }
+};
+
+export default {
+  startPerf,
+  endPerf,
 };
