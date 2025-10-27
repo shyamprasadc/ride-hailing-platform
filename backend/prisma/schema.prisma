@@ -1,0 +1,557 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ==================== USER MANAGEMENT ====================
+
+model Rider {
+  id            String   @id @default(uuid())
+  name          String
+  phone         String   @unique
+  email         String   @unique
+  profileImage  String?
+  rating        Float    @default(5.0)
+  totalRides    Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  rides         Ride[]
+  paymentMethods PaymentMethod[]
+  notifications Notification[]
+
+  @@index([phone])
+  @@index([email])
+  @@map("riders")
+}
+
+model Driver {
+  id              String        @id @default(uuid())
+  name            String
+  phone           String        @unique
+  email           String        @unique
+  profileImage    String?
+  licenseNumber   String        @unique
+  
+  // Vehicle Information
+  vehicleType     VehicleType
+  vehicleNumber   String
+  vehicleModel    String
+  vehicleColor    String
+  
+  // Status & Metrics
+  status          DriverStatus  @default(OFFLINE)
+  rating          Float         @default(5.0)
+  totalTrips      Int           @default(0)
+  acceptanceRate  Float         @default(100.0)
+  
+  // Current Location (for quick queries)
+  currentLat      Float?
+  currentLng      Float?
+  lastLocationUpdate DateTime?
+  
+  // Background check
+  isVerified      Boolean       @default(false)
+  verifiedAt      DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  trips           Trip[]
+  locationHistory DriverLocation[]
+  notifications   Notification[]
+  earnings        Earning[]
+
+  @@index([status, currentLat, currentLng]) // Critical for nearby driver search
+  @@index([phone])
+  @@index([email])
+  @@index([status])
+  @@map("drivers")
+}
+
+enum DriverStatus {
+  OFFLINE
+  AVAILABLE
+  ON_RIDE
+  BREAK
+}
+
+enum VehicleType {
+  SEDAN      // Standard
+  SUV        // Premium
+  HATCHBACK  // Economy
+  LUXURY     // Luxury
+  AUTO       // Auto-rickshaw
+}
+
+// ==================== LOCATION TRACKING ====================
+
+model DriverLocation {
+  id          String   @id @default(uuid())
+  driverId    String
+  latitude    Float
+  longitude   Float
+  heading     Float?   // Direction in degrees
+  speed       Float?   // Speed in km/h
+  accuracy    Float?   // GPS accuracy in meters
+  timestamp   DateTime @default(now())
+  
+  // Relations
+  driver      Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, timestamp(sort: Desc)]) // For querying recent locations
+  @@index([timestamp]) // For partitioning/cleanup
+  @@map("driver_locations")
+}
+
+// ==================== RIDE & TRIP MANAGEMENT ====================
+
+model Ride {
+  id                String      @id @default(uuid())
+  riderId           String
+  driverId          String?
+  
+  // Pickup & Dropoff
+  pickupLat         Float
+  pickupLng         Float
+  pickupAddress     String?
+  dropoffLat        Float
+  dropoffLng        Float
+  dropoffAddress    String?
+  
+  // Ride Details
+  rideType          RideType    @default(STANDARD)
+  status            RideStatus  @default(SEARCHING)
+  estimatedFare     Float?
+  estimatedDistance Float?      // in kilometers
+  estimatedDuration Int?        // in seconds
+  
+  // Surge Pricing
+  surgeMultiplier   Float       @default(1.0)
+  
+  // Special Requests
+  notes             String?
+  scheduledAt       DateTime?   // For scheduled rides
+  
+  // Matching Metadata
+  searchRadius      Float       @default(5.0) // in km
+  matchedAt         DateTime?
+  searchAttempts    Int         @default(0)
+  rejectedDriverIds String[]    @default([]) // Array of driver IDs who rejected
+  
+  // Idempotency
+  idempotencyKey    String?     @unique
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  rider             Rider       @relation(fields: [riderId], references: [id])
+  trip              Trip?
+  notifications     Notification[]
+
+  @@index([status, createdAt(sort: Desc)]) // For active rides dashboard
+  @@index([riderId, createdAt(sort: Desc)]) // Rider's ride history
+  @@index([status, pickupLat, pickupLng]) // For geospatial matching
+  @@index([scheduledAt]) // For scheduled rides processing
+  @@map("rides")
+}
+
+enum RideStatus {
+  SEARCHING       // Looking for driver
+  MATCHED         // Driver assigned
+  DRIVER_ARRIVING // Driver en route to pickup
+  ARRIVED         // Driver at pickup location
+  IN_PROGRESS     // Trip started
+  COMPLETED       // Trip ended successfully
+  CANCELLED       // Cancelled by rider/driver
+  FAILED          // System failure
+}
+
+enum RideType {
+  ECONOMY
+  STANDARD
+  PREMIUM
+  XL
+  LUXURY
+}
+
+model Trip {
+  id                String      @id @default(uuid())
+  rideId            String      @unique
+  driverId          String
+  
+  // Trip Timeline
+  startTime         DateTime?
+  endTime           DateTime?
+  duration          Int?        // in seconds
+  
+  // Distance & Route
+  actualDistance    Float?      // in kilometers
+  routePath         Json?       // Array of {lat, lng} points
+  
+  // Fare Calculation
+  baseFare          Float
+  perKmRate         Float
+  perMinRate        Float
+  distanceFare      Float       @default(0)
+  timeFare          Float       @default(0)
+  surgeAmount       Float       @default(0)
+  totalFare         Float
+  discount          Float       @default(0)
+  finalFare         Float
+  
+  // Commission
+  platformFee       Float       // Commission for platform
+  driverEarnings    Float       // Driver's share
+  
+  // Status
+  status            TripStatus  @default(PENDING)
+  
+  // OTP for verification
+  startOtp          String?     // 4-digit OTP for trip start
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  ride              Ride        @relation(fields: [rideId], references: [id])
+  driver            Driver      @relation(fields: [driverId], references: [id])
+  payment           Payment?
+  receipt           Receipt?
+
+  @@index([driverId, createdAt(sort: Desc)]) // Driver's trip history
+  @@index([status])
+  @@index([startTime, endTime]) // For analytics
+  @@map("trips")
+}
+
+enum TripStatus {
+  PENDING
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== PAYMENT MANAGEMENT ====================
+
+model PaymentMethod {
+  id              String          @id @default(uuid())
+  riderId         String
+  
+  type            PaymentType
+  isDefault       Boolean         @default(false)
+  
+  // Card Details (tokenized)
+  cardToken       String?         // PSP token
+  cardLast4       String?
+  cardBrand       String?         // Visa, Mastercard, etc.
+  cardExpiry      String?         // MM/YY
+  
+  // UPI Details
+  upiId           String?
+  
+  // Wallet
+  walletProvider  String?         // Paytm, PhonePe, etc.
+  
+  isActive        Boolean         @default(true)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  rider           Rider           @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+
+  @@index([riderId, isDefault])
+  @@map("payment_methods")
+}
+
+enum PaymentType {
+  CARD
+  UPI
+  WALLET
+  CASH
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  tripId              String        @unique
+  paymentMethodId     String?
+  
+  amount              Float
+  currency            String        @default("INR")
+  status              PaymentStatus @default(PENDING)
+  
+  // PSP Details
+  pspName             String?       // Stripe, Razorpay, etc.
+  pspTransactionId    String?       @unique
+  pspResponse         Json?
+  
+  // Idempotency
+  idempotencyKey      String        @unique
+  
+  // Retry & Failure
+  attempts            Int           @default(0)
+  maxAttempts         Int           @default(3)
+  failureReason       String?
+  
+  // Timestamps
+  initiatedAt         DateTime      @default(now())
+  completedAt         DateTime?
+  failedAt            DateTime?
+  refundedAt          DateTime?
+  
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  // Relations
+  trip                Trip          @relation(fields: [tripId], references: [id])
+  paymentMethod       PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  refunds             Refund[]
+
+  @@index([status])
+  @@index([pspTransactionId])
+  @@index([createdAt(sort: Desc)])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Refund {
+  id                String    @id @default(uuid())
+  paymentId         String
+  
+  amount            Float
+  reason            String
+  status            RefundStatus @default(PENDING)
+  
+  pspRefundId       String?   @unique
+  
+  initiatedAt       DateTime  @default(now())
+  completedAt       DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  payment           Payment   @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Receipt {
+  id              String    @id @default(uuid())
+  tripId          String    @unique
+  
+  receiptNumber   String    @unique
+  
+  // Breakdown
+  breakdown       Json      // Detailed fare breakdown
+  taxAmount       Float     @default(0)
+  
+  // PDF
+  pdfUrl          String?
+  
+  issuedAt        DateTime  @default(now())
+  
+  // Relations
+  trip            Trip      @relation(fields: [tripId], references: [id])
+
+  @@index([receiptNumber])
+  @@map("receipts")
+}
+
+// ==================== EARNINGS & PAYOUTS ====================
+
+model Earning {
+  id              String    @id @default(uuid())
+  driverId        String
+  
+  amount          Float
+  type            EarningType
+  description     String?
+  
+  // Reference
+  referenceId     String?   // Trip ID or bonus ID
+  
+  date            DateTime  @default(now())
+  
+  // Relations
+  driver          Driver    @relation(fields: [driverId], references: [id])
+
+  @@index([driverId, date(sort: Desc)])
+  @@index([type])
+  @@map("earnings")
+}
+
+enum EarningType {
+  TRIP
+  BONUS
+  REFERRAL
+  ADJUSTMENT
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id          String            @id @default(uuid())
+  
+  // Recipient
+  riderId     String?
+  driverId    String?
+  
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?             // Additional data payload
+  
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  
+  // Related entities
+  rideId      String?
+  
+  createdAt   DateTime          @default(now())
+  
+  // Relations
+  rider       Rider?            @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  driver      Driver?           @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  ride        Ride?             @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  @@index([riderId, isRead, createdAt(sort: Desc)])
+  @@index([driverId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  RIDE_MATCHED
+  DRIVER_ARRIVING
+  DRIVER_ARRIVED
+  TRIP_STARTED
+  TRIP_COMPLETED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  RIDE_CANCELLED
+  RIDE_REQUEST
+  PROMO
+  SYSTEM
+}
+
+// ==================== PRICING & CONFIGURATION ====================
+
+model PricingConfig {
+  id              String    @id @default(uuid())
+  
+  region          String    // Mumbai, Bangalore, etc.
+  rideType        RideType
+  
+  baseFare        Float
+  perKmRate       Float
+  perMinRate      Float
+  minimumFare     Float
+  
+  // Surge Pricing
+  surgeEnabled    Boolean   @default(true)
+  maxSurge        Float     @default(3.0)
+  
+  // Distance limits
+  maxDistance     Float     @default(100.0) // in km
+  
+  isActive        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([region, rideType])
+  @@index([region, isActive])
+  @@map("pricing_configs")
+}
+
+model SurgeZone {
+  id              String    @id @default(uuid())
+  
+  name            String
+  region          String
+  
+  // Polygon coordinates for the zone
+  boundaries      Json      // Array of {lat, lng} points
+  
+  currentSurge    Float     @default(1.0)
+  
+  // Triggers
+  activeRides     Int       @default(0)
+  availableDrivers Int      @default(0)
+  
+  isActive        Boolean   @default(true)
+  
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+
+  @@index([region, isActive])
+  @@map("surge_zones")
+}
+
+// ==================== ANALYTICS & LOGS ====================
+
+model RideEvent {
+  id          String    @id @default(uuid())
+  rideId      String
+  
+  eventType   String    // ride_created, driver_matched, trip_started, etc.
+  eventData   Json?
+  
+  timestamp   DateTime  @default(now())
+
+  @@index([rideId, timestamp])
+  @@index([eventType, timestamp])
+  @@map("ride_events")
+}
+
+model ApiLog {
+  id              String    @id @default(uuid())
+  
+  method          String
+  endpoint        String
+  statusCode      Int
+  responseTime    Int       // in milliseconds
+  
+  userId          String?   // Rider or Driver ID
+  ipAddress       String?
+  userAgent       String?
+  
+  errorMessage    String?
+  
+  timestamp       DateTime  @default(now())
+
+  @@index([endpoint, timestamp])
+  @@index([statusCode, timestamp])
+  @@map("api_logs")
+}
