@@ -148,7 +148,39 @@ Driver → POST /v1/trips/{id}/end
   - Trigger payment flow
   - Update driver availability
   - Send receipt notification
+```
 
+### New Relic Custom Metrics Integration
+
+This module sends custom application metrics (latency, error counts, success counts) to **New Relic** using the `@newrelic/telemetry-sdk`.
+It also includes a **Performance Observer** that automatically measures function or code block execution time using Node.js `perf_hooks`, and sends the latency data to New Relic.
+
+#### Usage
+
+```ts
+import PerformanceMetric from '@/services/newrelic/metric.js';
+
+// Example: Measure surge lookup latency
+const getSurgeMultiplier = async (lat: number, lng: number): Promise<number> => {
+  const perfId = performance.now().toString();
+  PerformanceMetric.startPerf('surge_lookup', perfId);
+
+  const surgeZone = await prisma.surgeZone.findFirst({ where: { isActive: true } });
+
+  PerformanceMetric.endPerf('surge_lookup', perfId);
+  return surgeZone?.currentSurge || 1.0;
+};
+```
+
+#### 🧩 Internal Details
+
+* Metrics are sent through `pushCustomMetric()` using a single `MetricClient` instance.
+* Each metric includes standard context:
+
+  * `service.name`, `service.version`, `environment`, `region`, `host.name`, `client.id`, `timestamp`
+* Performance timing uses `performance.mark` and `performance.measure`.
+* The observer converts `PerformanceEntry` events into latency metrics and pushes them automatically.
+* Errors are safely logged without breaking execution flow.
 
 ### Steps to Run
 
