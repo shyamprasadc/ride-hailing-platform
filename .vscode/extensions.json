@@ -1,0 +1,7 @@
+// (new file) recommend extension installations for workspace
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}
