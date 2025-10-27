@@ -50,7 +50,7 @@
 
 ### Database Layer
 
-**PostgreSQL (Primary Database)**
+**PostgreSQL (Primary Database) + PostGis + Prisma ORM**
 ```
 Tables:
 - riders (id, name, phone, email, payment_methods)
@@ -70,17 +70,6 @@ Use Cases:
 - Rate limiting & idempotency keys
 - Session management
 ```
-
-### Frontend (React)
-
-**Two Main Apps:**
-1. **Rider App**: Request rides, track driver, view trip history
-2. **Driver App**: Accept rides, update location, manage trips
-
-**Key Features:**
-- Real-time map integration (Google Maps / Mapbox)
-- WebSocket connection for live updates
-- Responsive UI with state management (Redux/Context API)
 
 ## 3. Key Workflows
 
@@ -110,7 +99,7 @@ Use Cases:
 - Implement connection pooling
 - Cache driver profiles
 
-### Workflow 2: Location Updates (200k/sec)
+### Workflow 2: Location Updates
 ```
 1. Driver app sends location every 1-2 seconds
    ↓
@@ -158,21 +147,22 @@ It also includes a **Performance Observer** that automatically measures function
 #### Usage
 
 ```ts
-import PerformanceMetric from '@/services/newrelic/metric.js';
+import PerformanceMetric from '../core/PerformanceMetric';
+import { performance } from 'perf_hooks';
 
 // Example: Measure surge lookup latency
 const getSurgeMultiplier = async (lat: number, lng: number): Promise<number> => {
   const perfId = performance.now().toString();
+
   PerformanceMetric.startPerf('surge_lookup', perfId);
 
   const surgeZone = await prisma.surgeZone.findFirst({ where: { isActive: true } });
 
   PerformanceMetric.endPerf('surge_lookup', perfId);
-  return surgeZone?.currentSurge || 1.0;
 };
 ```
 
-#### 🧩 Internal Details
+#### Internal Details
 
 * Metrics are sent through `pushCustomMetric()` using a single `MetricClient` instance.
 * Each metric includes standard context:
