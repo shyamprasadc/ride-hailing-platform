@@ -12,5 +12,6 @@ export const checkRateLimit = async (req: Request, res: Response, next: NextFunc
 
   res.set('X-RateLimit-Limit', String(result.limit));
   res.set('X-RateLimit-Remaining', String(result.limit - result.current));
+
   next();
 };

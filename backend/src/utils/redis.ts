@@ -1,9 +1,4 @@
-// src/utils/redis.ts
-// Redis utilities for geospatial operations and caching (TypeScript)
-
 import Redis from 'ioredis';
-
-// ==================== TYPES & INTERFACES ====================
 
 interface RedisConfig {
   host: string;
@@ -108,11 +103,11 @@ export async function addAvailableDriver(
   metadata: Partial<DriverMetadata> = {}
 ): Promise<boolean> {
   const key = 'drivers:available';
-  
+
   try {
     // Add to geospatial index
     await redisClient.geoadd(key, lng, lat, driverId);
-    
+
     // Store driver metadata
     const metadataKey = `driver:${driverId}:meta`;
     const metadataToStore: DriverMetadata = {
@@ -122,12 +117,12 @@ export async function addAvailableDriver(
       lastUpdate: Date.now(),
       ...metadata,
     };
-    
+
     await redisClient.hmset(metadataKey, metadataToStore as any);
-    
+
     // Set expiry for metadata (5 minutes)
     await redisClient.expire(metadataKey, 300);
-    
+
     return true;
   } catch (error) {
     console.error('Error adding available driver:', error);
@@ -140,7 +135,7 @@ export async function addAvailableDriver(
  */
 export async function removeAvailableDriver(driverId: string): Promise<boolean> {
   const key = 'drivers:available';
-  
+
   try {
     await redisClient.zrem(key, driverId);
     await redisClient.del(`driver:${driverId}:meta`);
@@ -161,7 +156,7 @@ export async function findNearbyDrivers(
   count: number = 10
 ): Promise<NearbyDriver[]> {
   const key = 'drivers:available';
-  
+
   try {
     // GEORADIUS returns drivers within radius
     const result = await redisClient.georadius(
@@ -175,7 +170,7 @@ export async function findNearbyDrivers(
       'COUNT',
       count
     );
-    
+
     // Format result and fetch metadata
     const drivers = await Promise.all(
       result.map(async ([driverId, distance]: [string, string]) => {
@@ -187,7 +182,7 @@ export async function findNearbyDrivers(
         };
       })
     );
-    
+
     return drivers;
   } catch (error) {
     console.error('Error finding nearby drivers:', error);
@@ -204,11 +199,11 @@ export async function updateDriverLocation(
   lng: number
 ): Promise<boolean> {
   const key = 'drivers:available';
-  
+
   try {
     // Update in geo index
     await redisClient.geoadd(key, lng, lat, driverId);
-    
+
     // Update metadata
     const metadataKey = `driver:${driverId}:meta`;
     await redisClient.hmset(metadataKey, {
@@ -216,7 +211,7 @@ export async function updateDriverLocation(
       lng: lng.toString(),
       lastUpdate: Date.now().toString(),
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error updating driver location:', error);
@@ -229,15 +224,15 @@ export async function updateDriverLocation(
  */
 export async function getDriverLocation(driverId: string): Promise<Location | null> {
   const key = 'drivers:available';
-  
+
   try {
     const result = await redisClient.geopos(key, driverId);
     if (!result || !result[0]) return null;
-    
+
     const [lng, lat] = result[0];
-    return { 
-      lat: parseFloat(lat!), 
-      lng: parseFloat(lng!) 
+    return {
+      lat: parseFloat(lat!),
+      lng: parseFloat(lng!),
     };
   } catch (error) {
     console.error('Error getting driver location:', error);
@@ -254,7 +249,7 @@ export async function cacheGet<T = any>(key: string): Promise<T | null> {
   try {
     const value = await redisClient.get(key);
     if (!value) return null;
-    
+
     try {
       return JSON.parse(value) as T;
     } catch {
@@ -276,13 +271,13 @@ export async function cacheSet<T = any>(
 ): Promise<boolean> {
   try {
     const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-    
+
     if (expirySeconds) {
       await redisClient.setex(key, expirySeconds, stringValue);
     } else {
       await redisClient.set(key, stringValue);
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error setting cache:', error);
@@ -418,25 +413,25 @@ export async function checkRateLimit(
   const key = `ratelimit:${identifier}`;
   const now = Date.now();
   const windowStart = now - windowSeconds * 1000;
-  
+
   try {
     const pipeline = redisClient.pipeline();
-    
+
     // Remove old entries
     pipeline.zremrangebyscore(key, '-inf', windowStart);
-    
+
     // Count requests in current window
     pipeline.zcard(key);
-    
+
     // Add current request
     pipeline.zadd(key, now, `${now}-${Math.random()}`);
-    
+
     // Set expiry
     pipeline.expire(key, windowSeconds);
-    
+
     const results = await pipeline.exec();
     const count = results![1][1] as number;
-    
+
     return {
       allowed: count < limit,
       current: count + 1,
@@ -476,13 +471,13 @@ export function subscribeToLocationUpdates(
   callback: (data: LocationUpdate) => void
 ): () => void {
   const channel = `location:${driverId}`;
-  
+
   redisSubscriber.subscribe(channel, (err) => {
     if (err) {
       console.error('Error subscribing to location updates:', err);
     }
   });
-  
+
   const messageHandler = (ch: string, message: string) => {
     if (ch === channel) {
       try {
@@ -493,9 +488,9 @@ export function subscribeToLocationUpdates(
       }
     }
   };
-  
+
   redisSubscriber.on('message', messageHandler);
-  
+
   return () => {
     redisSubscriber.off('message', messageHandler);
     redisSubscriber.unsubscribe(channel);
@@ -505,10 +500,7 @@ export function subscribeToLocationUpdates(
 /**
  * Publish ride status update
  */
-export async function publishRideUpdate(
-  rideId: string,
-  updateData: any
-): Promise<boolean> {
+export async function publishRideUpdate(rideId: string, updateData: any): Promise<boolean> {
   const channel = `ride:${rideId}`;
   try {
     await redisPublisher.publish(channel, JSON.stringify(updateData));
@@ -522,18 +514,15 @@ export async function publishRideUpdate(
 /**
  * Subscribe to ride updates
  */
-export function subscribeToRideUpdates(
-  rideId: string,
-  callback: (data: any) => void
-): () => void {
+export function subscribeToRideUpdates(rideId: string, callback: (data: any) => void): () => void {
   const channel = `ride:${rideId}`;
-  
+
   redisSubscriber.subscribe(channel, (err) => {
     if (err) {
       console.error('Error subscribing to ride updates:', err);
     }
   });
-  
+
   const messageHandler = (ch: string, message: string) => {
     if (ch === channel) {
       try {
@@ -544,9 +533,9 @@ export function subscribeToRideUpdates(
       }
     }
   };
-  
+
   redisSubscriber.on('message', messageHandler);
-  
+
   return () => {
     redisSubscriber.off('message', messageHandler);
     redisSubscriber.unsubscribe(channel);
@@ -564,10 +553,10 @@ export async function acquireLock(
 ): Promise<string | null> {
   const lockValue = `${Date.now()}-${Math.random()}`;
   const key = `lock:${lockKey}`;
-  
+
   try {
     const result = await redisClient.set(key, lockValue, 'EX', ttlSeconds, 'NX');
-    
+
     if (result === 'OK') {
       return lockValue; // Return lock value for release verification
     }
@@ -581,12 +570,9 @@ export async function acquireLock(
 /**
  * Release distributed lock
  */
-export async function releaseLock(
-  lockKey: string,
-  lockValue: string
-): Promise<boolean> {
+export async function releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
   const key = `lock:${lockKey}`;
-  
+
   try {
     // Lua script to ensure we only delete if the lock value matches
     const script = `
@@ -596,7 +582,7 @@ export async function releaseLock(
         return 0
       end
     `;
-    
+
     const result = await redisClient.eval(script, 1, key, lockValue);
     return result === 1;
   } catch (error) {
@@ -614,11 +600,11 @@ export async function withLock<T>(
   callback: () => Promise<T>
 ): Promise<T> {
   const lockValue = await acquireLock(lockKey, ttlSeconds);
-  
+
   if (!lockValue) {
     throw new Error('Could not acquire lock');
   }
-  
+
   try {
     return await callback();
   } finally {
@@ -643,10 +629,10 @@ export async function queueLocationUpdate(
   accuracy?: number
 ): Promise<void> {
   locationUpdateQueue.push({ driverId, lat, lng, heading, speed, accuracy });
-  
+
   const batchSize = parseInt(process.env.LOCATION_BATCH_SIZE || '100', 10);
   const batchInterval = parseInt(process.env.LOCATION_BATCH_INTERVAL_MS || '10000', 10);
-  
+
   // Process batch if size threshold reached
   if (locationUpdateQueue.length >= batchSize) {
     await processLocationBatch();
@@ -661,16 +647,16 @@ export async function queueLocationUpdate(
  */
 export async function processLocationBatch(): Promise<void> {
   if (locationUpdateQueue.length === 0) return;
-  
+
   const batch = locationUpdateQueue.splice(0);
   if (batchTimeout) {
     clearTimeout(batchTimeout);
     batchTimeout = null;
   }
-  
+
   try {
     const pipeline = redisClient.pipeline();
-    
+
     for (const { driverId, lat, lng } of batch) {
       pipeline.geoadd('drivers:available', lng, lat, driverId);
       pipeline.hmset(`driver:${driverId}:meta`, {
@@ -679,7 +665,7 @@ export async function processLocationBatch(): Promise<void> {
         lastUpdate: Date.now().toString(),
       });
     }
-    
+
     await pipeline.exec();
     console.log(`Processed ${batch.length} location updates`);
   } catch (error) {
@@ -698,11 +684,11 @@ export async function incrementCounter(
 ): Promise<number | null> {
   try {
     const result = await redisClient.incr(key);
-    
+
     if (expirySeconds && result === 1) {
       await redisClient.expire(key, expirySeconds);
     }
-    
+
     return result;
   } catch (error) {
     console.error('Error incrementing counter:', error);
@@ -728,14 +714,14 @@ export async function getCounter(key: string): Promise<number> {
  */
 export async function trackActiveRide(rideId: string, add: boolean = true): Promise<number> {
   const key = 'metrics:active_rides';
-  
+
   try {
     if (add) {
       await redisClient.sadd(key, rideId);
     } else {
       await redisClient.srem(key, rideId);
     }
-    
+
     return await redisClient.scard(key);
   } catch (error) {
     console.error('Error tracking active ride:', error);
@@ -748,7 +734,7 @@ export async function trackActiveRide(rideId: string, add: boolean = true): Prom
  */
 export async function getActiveRidesCount(): Promise<number> {
   const key = 'metrics:active_rides';
-  
+
   try {
     return await redisClient.scard(key);
   } catch (error) {
@@ -766,16 +752,16 @@ export async function updateSurgeMetrics(
   availableDrivers: number
 ): Promise<number> {
   const key = `surge:${zone}`;
-  
+
   try {
     const ratio = availableDrivers > 0 ? activeRides / availableDrivers : 0;
     let multiplier = 1.0;
-    
+
     if (ratio > 3) multiplier = 2.5;
     else if (ratio > 2) multiplier = 2.0;
     else if (ratio > 1.5) multiplier = 1.5;
     else if (ratio > 1) multiplier = 1.2;
-    
+
     await redisClient.hmset(key, {
       activeRides: activeRides.toString(),
       availableDrivers: availableDrivers.toString(),
@@ -783,9 +769,9 @@ export async function updateSurgeMetrics(
       multiplier: multiplier.toFixed(1),
       lastUpdate: Date.now().toString(),
     });
-    
+
     await redisClient.expire(key, 300); // 5 minutes
-    
+
     return multiplier;
   } catch (error) {
     console.error('Error updating surge metrics:', error);
@@ -798,7 +784,7 @@ export async function updateSurgeMetrics(
  */
 export async function getSurgeMultiplier(zone: string): Promise<number> {
   const key = `surge:${zone}`;
-  
+
   try {
     const data = await redisClient.hgetall(key);
     return data.multiplier ? parseFloat(data.multiplier) : 1.0;
@@ -831,7 +817,7 @@ export async function getRedisInfo(): Promise<Record<string, string> | null> {
     const info = await redisClient.info();
     const lines = info.split('\r\n');
     const data: Record<string, string> = {};
-    
+
     lines.forEach((line) => {
       if (line && !line.startsWith('#')) {
         const [key, value] = line.split(':');
@@ -840,7 +826,7 @@ export async function getRedisInfo(): Promise<Record<string, string> | null> {
         }
       }
     });
-    
+
     return data;
   } catch (error) {
     console.error('Error getting Redis info:', error);
@@ -864,13 +850,7 @@ export async function disconnect(): Promise<void> {
   }
 }
 
-// ==================== EXPORTS ====================
-
-export {
-  redisClient,
-  redisSubscriber,
-  redisPublisher,
-};
+export { redisClient, redisSubscriber, redisPublisher };
 
 export default {
   // Geospatial
@@ -879,7 +859,7 @@ export default {
   findNearbyDrivers,
   updateDriverLocation,
   getDriverLocation,
-  
+
   // Caching
   cacheGet,
   cacheSet,
@@ -890,30 +870,30 @@ export default {
   invalidateRideCache,
   cacheDriverProfile,
   getCachedDriverProfile,
-  
+
   // Idempotency
   checkIdempotency,
   storeIdempotentResponse,
   getIdempotentResponse,
-  
+
   // Rate Limiting
   checkRateLimit,
-  
+
   // Pub/Sub
   publishLocationUpdate,
   subscribeToLocationUpdates,
   publishRideUpdate,
   subscribeToRideUpdates,
-  
+
   // Distributed Locks
   acquireLock,
   releaseLock,
   withLock,
-  
+
   // Batch Operations
   queueLocationUpdate,
   processLocationBatch,
-  
+
   // Metrics
   incrementCounter,
   getCounter,
@@ -921,7 +901,7 @@ export default {
   getActiveRidesCount,
   updateSurgeMetrics,
   getSurgeMultiplier,
-  
+
   // Health
   healthCheck,
   getRedisInfo,

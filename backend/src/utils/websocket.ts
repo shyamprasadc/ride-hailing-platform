@@ -1,6 +1,3 @@
-// ==================== WEBSOCKET HANDLERS ====================
-// src/websocket.ts
-
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { subscribeToRideUpdates, subscribeToLocationUpdates } from './redis';
 

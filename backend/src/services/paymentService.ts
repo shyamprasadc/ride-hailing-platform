@@ -1,5 +1,3 @@
-// ==================== PAYMENT SERVICE ====================
-// src/services/payment.service.ts
 import { PrismaClient } from '@prisma/client';
 import {
   ProcessPaymentRequest,
@@ -8,13 +6,9 @@ import {
   TripStatus,
   Result,
   NotFoundError,
-  ValidationError
+  ValidationError,
 } from '../core/Types';
-import {
-  checkIdempotency,
-  storeIdempotentResponse,
-  getIdempotentResponse,
-} from '../utils/redis';
+import { checkIdempotency, storeIdempotentResponse, getIdempotentResponse } from '../utils/redis';
 const prisma = new PrismaClient();
 
 /**
@@ -30,9 +24,7 @@ export const processPayment = async (
 
     if (!isFirstRequest) {
       // Return cached response
-      const cachedResponse = await getIdempotentResponse<PaymentResponse>(
-        idempotencyKey
-      );
+      const cachedResponse = await getIdempotentResponse<PaymentResponse>(idempotencyKey);
       if (cachedResponse) {
         return { success: true, data: cachedResponse };
       }
@@ -91,25 +83,18 @@ export const processPayment = async (
       });
 
       // Process payment with PSP (mock for now)
-      const pspResponse = await processPSPPayment(
-        trip.finalFare,
-        request.paymentMethodId
-      );
+      const pspResponse = await processPSPPayment(trip.finalFare, request.paymentMethodId);
 
       // Update payment with PSP response
       const updatedPayment = await tx.payment.update({
         where: { id: payment.id },
         data: {
-          status: pspResponse.success
-            ? PaymentStatus.COMPLETED
-            : PaymentStatus.FAILED,
+          status: pspResponse.success ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
           pspTransactionId: pspResponse.transactionId,
           pspResponse: pspResponse,
           completedAt: pspResponse.success ? new Date() : undefined,
           failedAt: pspResponse.success ? undefined : new Date(),
-          failureReason: pspResponse.success
-            ? undefined
-            : pspResponse.error,
+          failureReason: pspResponse.success ? undefined : pspResponse.error,
         },
       });
 
@@ -118,9 +103,7 @@ export const processPayment = async (
         data: {
           riderId: trip.ride.riderId,
           type: pspResponse.success ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
-          title: pspResponse.success
-            ? 'Payment Successful'
-            : 'Payment Failed',
+          title: pspResponse.success ? 'Payment Successful' : 'Payment Failed',
           message: pspResponse.success
             ? `₹${trip.finalFare.toFixed(2)} paid successfully`
             : 'Payment failed. Please try again.',
@@ -190,9 +173,7 @@ const processPSPPayment = async (
 /**
  * Get payment by trip ID
  */
-export const getPaymentByTripId = async (
-  tripId: string
-): Promise<Result<PaymentResponse>> => {
+export const getPaymentByTripId = async (tripId: string): Promise<Result<PaymentResponse>> => {
   try {
     const payment = await prisma.payment.findUnique({
       where: { tripId },
@@ -225,9 +206,7 @@ export const getPaymentByTripId = async (
 /**
  * Retry failed payment
  */
-export const retryPayment = async (
-  paymentId: string
-): Promise<Result<PaymentResponse>> => {
+export const retryPayment = async (paymentId: string): Promise<Result<PaymentResponse>> => {
   try {
     return await prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({
@@ -266,25 +245,18 @@ export const retryPayment = async (
       });
 
       // Process payment with PSP
-      const pspResponse = await processPSPPayment(
-        payment.amount,
-        payment.paymentMethodId || ''
-      );
+      const pspResponse = await processPSPPayment(payment.amount, payment.paymentMethodId || '');
 
       // Update payment with result
       const updatedPayment = await tx.payment.update({
         where: { id: paymentId },
         data: {
-          status: pspResponse.success
-            ? PaymentStatus.COMPLETED
-            : PaymentStatus.FAILED,
+          status: pspResponse.success ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
           pspTransactionId: pspResponse.transactionId,
           pspResponse: pspResponse,
           completedAt: pspResponse.success ? new Date() : undefined,
           failedAt: pspResponse.success ? undefined : new Date(),
-          failureReason: pspResponse.success
-            ? undefined
-            : pspResponse.error,
+          failureReason: pspResponse.success ? undefined : pspResponse.error,
         },
       });
 
@@ -373,9 +345,7 @@ export const processRefund = async (
         await tx.payment.update({
           where: { id: paymentId },
           data: {
-            status: isFullRefund
-              ? PaymentStatus.REFUNDED
-              : ('PARTIALLY_REFUNDED' as PaymentStatus),
+            status: isFullRefund ? PaymentStatus.REFUNDED : ('PARTIALLY_REFUNDED' as PaymentStatus),
             refundedAt: new Date(),
           },
         });

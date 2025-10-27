@@ -1,6 +1,3 @@
-// src/services/trip.service.ts
-// Functional programming approach for trip management
-
 import { PrismaClient } from '@prisma/client';
 import {
   StartTripRequest,
@@ -13,15 +10,9 @@ import {
   RideStatus,
   TripStatus,
 } from '../core/Types';
-import {
-  publishRideUpdate,
-  invalidateRideCache,
-  trackActiveRide,
-} from '../utils/redis';
+import { publishRideUpdate, invalidateRideCache, trackActiveRide } from '../utils/redis';
 
 const prisma = new PrismaClient();
-
-// ==================== PURE FUNCTIONS ====================
 
 /**
  * Calculate final fare for completed trip
@@ -37,8 +28,7 @@ const calculateFare = (
 ): FareCalculation => {
   const distanceFare = distance * perKmRate;
   const timeFare = (duration / 60) * perMinRate;
-  const surgeAmount =
-    (baseFare + distanceFare + timeFare) * (surgeMultiplier - 1);
+  const surgeAmount = (baseFare + distanceFare + timeFare) * (surgeMultiplier - 1);
   const totalFare = baseFare + distanceFare + timeFare + surgeAmount;
   const finalFare = Math.max(0, totalFare - discount);
   const platformFee = finalFare * 0.2; // 20% commission
@@ -88,14 +78,10 @@ const toTripResponse = (trip: any, ride: any, driver: any): TripResponse => ({
   },
 });
 
-// ==================== MAIN SERVICE FUNCTIONS ====================
-
 /**
  * Start a trip
  */
-export const startTrip = async (
-  request: StartTripRequest
-): Promise<Result<TripResponse>> => {
+export const startTrip = async (request: StartTripRequest): Promise<Result<TripResponse>> => {
   try {
     return await prisma.$transaction(async (tx) => {
       // Get trip with ride and driver info
@@ -175,11 +161,7 @@ export const startTrip = async (
         tripStartTime: updatedTrip.startTime,
       });
 
-      const response = toTripResponse(
-        updatedTrip,
-        updatedTrip.ride,
-        updatedTrip.driver
-      );
+      const response = toTripResponse(updatedTrip, updatedTrip.ride, updatedTrip.driver);
 
       return { success: true, data: response };
     });
@@ -192,9 +174,7 @@ export const startTrip = async (
 /**
  * End a trip and calculate fare
  */
-export const endTrip = async (
-  request: EndTripRequest
-): Promise<Result<TripResponse>> => {
+export const endTrip = async (request: EndTripRequest): Promise<Result<TripResponse>> => {
   try {
     return await prisma.$transaction(async (tx) => {
       // Get trip with ride info
@@ -229,9 +209,7 @@ export const endTrip = async (
 
       // Calculate trip duration
       const endTime = new Date();
-      const duration = Math.floor(
-        (endTime.getTime() - trip.startTime.getTime()) / 1000
-      );
+      const duration = Math.floor((endTime.getTime() - trip.startTime.getTime()) / 1000);
 
       // Calculate fare
       const fareCalculation = calculateFare(
@@ -354,11 +332,7 @@ export const endTrip = async (
         tripEndTime: endTime,
       });
 
-      const response = toTripResponse(
-        updatedTrip,
-        updatedTrip.ride,
-        updatedTrip.driver
-      );
+      const response = toTripResponse(updatedTrip, updatedTrip.ride, updatedTrip.driver);
 
       return { success: true, data: response };
     });
@@ -371,9 +345,7 @@ export const endTrip = async (
 /**
  * Get trip by ID
  */
-export const getTripById = async (
-  tripId: string
-): Promise<Result<TripResponse>> => {
+export const getTripById = async (tripId: string): Promise<Result<TripResponse>> => {
   try {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },

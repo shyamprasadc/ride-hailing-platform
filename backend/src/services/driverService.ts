@@ -1,6 +1,3 @@
-// src/services/driver.service.ts
-// Functional programming approach for driver management
-
 import { PrismaClient } from '@prisma/client';
 import {
   UpdateLocationRequest,
@@ -26,14 +23,10 @@ import {
 
 const prisma = new PrismaClient();
 
-// ==================== PURE FUNCTIONS ====================
-
 /**
  * Validate location data
  */
-const validateLocation = (
-  location: UpdateLocationRequest
-): Result<true> => {
+const validateLocation = (location: UpdateLocationRequest): Result<true> => {
   if (location.latitude < -90 || location.latitude > 90) {
     return { success: false, error: new Error('Invalid latitude') };
   }
@@ -67,15 +60,14 @@ const toDriverInfo = (driver: any): DriverInfo => ({
   vehicleModel: driver.vehicleModel,
   vehicleColor: driver.vehicleColor,
   rating: driver.rating,
-  currentLocation: driver.currentLat && driver.currentLng
-    ? {
-        lat: driver.currentLat,
-        lng: driver.currentLng,
-      }
-    : undefined,
+  currentLocation:
+    driver.currentLat && driver.currentLng
+      ? {
+          lat: driver.currentLat,
+          lng: driver.currentLng,
+        }
+      : undefined,
 });
-
-// ==================== DATABASE OPERATIONS ====================
 
 /**
  * Get driver from database
@@ -89,10 +81,7 @@ const getDriverFromDb = async (driverId: string) => {
 /**
  * Update driver location in database
  */
-const updateDriverLocationInDb = async (
-  driverId: string,
-  location: UpdateLocationRequest
-) => {
+const updateDriverLocationInDb = async (driverId: string, location: UpdateLocationRequest) => {
   return await prisma.driver.update({
     where: { id: driverId },
     data: {
@@ -106,10 +95,7 @@ const updateDriverLocationInDb = async (
 /**
  * Update driver status in database
  */
-const updateDriverStatusInDb = async (
-  driverId: string,
-  status: DriverStatus
-) => {
+const updateDriverStatusInDb = async (driverId: string, status: DriverStatus) => {
   return await prisma.driver.update({
     where: { id: driverId },
     data: { status },
@@ -130,8 +116,6 @@ const getActiveTrip = async (driverId: string) => {
     },
   });
 };
-
-// ==================== MAIN SERVICE FUNCTIONS ====================
 
 /**
  * Update driver location
@@ -222,15 +206,10 @@ export const updateDriverAvailability = async (
     // Update Redis geo index
     if (status === DriverStatus.AVAILABLE) {
       if (driver.currentLat && driver.currentLng) {
-        await addAvailableDriver(
-          driverId,
-          driver.currentLat,
-          driver.currentLng,
-          {
-            vehicleType: driver.vehicleType,
-            rating: driver.rating,
-          }
-        );
+        await addAvailableDriver(driverId, driver.currentLat, driver.currentLng, {
+          vehicleType: driver.vehicleType,
+          rating: driver.rating,
+        });
       }
     } else {
       await removeAvailableDriver(driverId);
@@ -255,118 +234,114 @@ export const acceptRide = async (
 ): Promise<Result<{ rideId: string; message: string }>> => {
   try {
     // Use distributed lock to prevent race conditions
-    return await withLock(
-      `ride:${request.rideId}:matching`,
-      10,
-      async () => {
-        return await prisma.$transaction(async (tx) => {
-          // Lock and fetch ride
-          const ride = await tx.ride.findFirst({
-            where: {
-              id: request.rideId,
-              status: RideStatus.SEARCHING,
-            },
-          });
-
-          if (!ride) {
-            return {
-              success: false,
-              error: new ConflictError('Ride not available for matching'),
-            };
-          }
-
-          // Check driver availability
-          const driver = await tx.driver.findFirst({
-            where: {
-              id: request.driverId,
-              status: DriverStatus.AVAILABLE,
-            },
-          });
-
-          if (!driver) {
-            return {
-              success: false,
-              error: new ConflictError('Driver not available'),
-            };
-          }
-
-          // Update ride status
-          await tx.ride.update({
-            where: { id: request.rideId },
-            data: {
-              driverId: request.driverId,
-              status: RideStatus.MATCHED,
-              matchedAt: new Date(),
-            },
-          });
-
-          // Update driver status
-          await tx.driver.update({
-            where: { id: request.driverId },
-            data: { status: DriverStatus.ON_RIDE },
-          });
-
-          // Remove driver from available pool
-          await removeAvailableDriver(request.driverId);
-
-          // Create notification for rider
-          await tx.notification.create({
-            data: {
-              riderId: ride.riderId,
-              type: 'RIDE_MATCHED',
-              title: 'Driver Found!',
-              message: `${driver.name} is on the way`,
-              rideId: ride.id,
-              data: {
-                driverName: driver.name,
-                vehicleNumber: driver.vehicleNumber,
-                rating: driver.rating,
-              },
-            },
-          });
-
-          // Create notification for driver
-          await tx.notification.create({
-            data: {
-              driverId: request.driverId,
-              type: 'RIDE_REQUEST',
-              title: 'New Ride',
-              message: 'You have been matched with a rider',
-              rideId: ride.id,
-            },
-          });
-
-          // Log event
-          await tx.rideEvent.create({
-            data: {
-              rideId: ride.id,
-              eventType: 'driver_matched',
-              eventData: {
-                driverId: request.driverId,
-                driverName: driver.name,
-              },
-            },
-          });
-
-          // Invalidate ride cache
-          await invalidateRideCache(ride.id);
-
-          // Publish ride update
-          await publishRideUpdate(ride.id, {
-            status: RideStatus.MATCHED,
-            driver: toDriverInfo(driver),
-          });
-
-          return {
-            success: true,
-            data: {
-              rideId: ride.id,
-              message: 'Ride accepted successfully',
-            },
-          };
+    return await withLock(`ride:${request.rideId}:matching`, 10, async () => {
+      return await prisma.$transaction(async (tx) => {
+        // Lock and fetch ride
+        const ride = await tx.ride.findFirst({
+          where: {
+            id: request.rideId,
+            status: RideStatus.SEARCHING,
+          },
         });
-      }
-    );
+
+        if (!ride) {
+          return {
+            success: false,
+            error: new ConflictError('Ride not available for matching'),
+          };
+        }
+
+        // Check driver availability
+        const driver = await tx.driver.findFirst({
+          where: {
+            id: request.driverId,
+            status: DriverStatus.AVAILABLE,
+          },
+        });
+
+        if (!driver) {
+          return {
+            success: false,
+            error: new ConflictError('Driver not available'),
+          };
+        }
+
+        // Update ride status
+        await tx.ride.update({
+          where: { id: request.rideId },
+          data: {
+            driverId: request.driverId,
+            status: RideStatus.MATCHED,
+            matchedAt: new Date(),
+          },
+        });
+
+        // Update driver status
+        await tx.driver.update({
+          where: { id: request.driverId },
+          data: { status: DriverStatus.ON_RIDE },
+        });
+
+        // Remove driver from available pool
+        await removeAvailableDriver(request.driverId);
+
+        // Create notification for rider
+        await tx.notification.create({
+          data: {
+            riderId: ride.riderId,
+            type: 'RIDE_MATCHED',
+            title: 'Driver Found!',
+            message: `${driver.name} is on the way`,
+            rideId: ride.id,
+            data: {
+              driverName: driver.name,
+              vehicleNumber: driver.vehicleNumber,
+              rating: driver.rating,
+            },
+          },
+        });
+
+        // Create notification for driver
+        await tx.notification.create({
+          data: {
+            driverId: request.driverId,
+            type: 'RIDE_REQUEST',
+            title: 'New Ride',
+            message: 'You have been matched with a rider',
+            rideId: ride.id,
+          },
+        });
+
+        // Log event
+        await tx.rideEvent.create({
+          data: {
+            rideId: ride.id,
+            eventType: 'driver_matched',
+            eventData: {
+              driverId: request.driverId,
+              driverName: driver.name,
+            },
+          },
+        });
+
+        // Invalidate ride cache
+        await invalidateRideCache(ride.id);
+
+        // Publish ride update
+        await publishRideUpdate(ride.id, {
+          status: RideStatus.MATCHED,
+          driver: toDriverInfo(driver),
+        });
+
+        return {
+          success: true,
+          data: {
+            rideId: ride.id,
+            message: 'Ride accepted successfully',
+          },
+        };
+      });
+    });
   } catch (error) {
     console.error('Error accepting ride:', error);
     return { success: false, error: error as Error };
@@ -376,9 +351,7 @@ export const acceptRide = async (
 /**
  * Get driver by ID
  */
-export const getDriverById = async (
-  driverId: string
-): Promise<Result<DriverInfo>> => {
+export const getDriverById = async (driverId: string): Promise<Result<DriverInfo>> => {
   try {
     // Check cache first
     const cachedDriver = await getCachedDriverProfile(driverId);
@@ -534,8 +507,8 @@ export const markDriverArrived = async (
             perMinRate: pricingConfig?.perMinRate || 2,
             totalFare: ride.estimatedFare || 0,
             finalFare: ride.estimatedFare || 0,
-            platformFee:(ride.estimatedFare || 0) * 0.2,
-            driverEarnings:(ride.estimatedFare || 0) * 0.8,
+            platformFee: (ride.estimatedFare || 0) * 0.2,
+            driverEarnings: (ride.estimatedFare || 0) * 0.8,
             status: 'PENDING',
           },
         });
@@ -605,8 +578,7 @@ export const getDriverEarnings = async (
     const summary = earnings.reduce(
       (acc, earning) => {
         acc.total += earning.amount;
-        acc.byType[earning.type] =
-          (acc.byType[earning.type] || 0) + earning.amount;
+        acc.byType[earning.type] = (acc.byType[earning.type] || 0) + earning.amount;
         return acc;
       },
       { total: 0, byType: {} as Record<string, number> }
@@ -628,8 +600,7 @@ export const getDriverEarnings = async (
       data: {
         total: summary.total,
         tripCount,
-        averagePerTrip:
-          tripCount > 0 ? summary.byType.TRIP / tripCount : 0,
+        averagePerTrip: tripCount > 0 ? summary.byType.TRIP / tripCount : 0,
         byType: summary.byType,
       },
     };

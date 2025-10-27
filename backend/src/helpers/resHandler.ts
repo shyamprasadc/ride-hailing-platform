@@ -2,8 +2,6 @@ import { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthenticatedRequest } from '../core/Types';
 
-// ==================== HELPER FUNCTIONS ====================
-
 /**
  * Send error response
  */

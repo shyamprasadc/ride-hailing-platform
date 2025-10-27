@@ -1,6 +1,3 @@
-// src/services/ride.service.ts
-// Complete Ride Service Implementation - Functional Programming
-
 import { PrismaClient } from '@prisma/client';
 import {
   CreateRideRequest,
@@ -29,8 +26,6 @@ import {
 } from '../utils/redis';
 
 const prisma = new PrismaClient();
-
-// ==================== PURE FUNCTIONS ====================
 
 /**
  * Calculate estimated fare based on distance and pricing config

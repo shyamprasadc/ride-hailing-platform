@@ -1,6 +1,3 @@
-// src/types/index.ts
-// Core type definitions for the ride hailing application
-
 import { Request } from 'express';
 
 // ==================== ENUMS ====================
