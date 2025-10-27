@@ -40,7 +40,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created ${3} riders`);
+  console.log(`Created ${3} riders`);
 
   // ==================== SEED PAYMENT METHODS ====================
   console.log('Creating payment methods...');
@@ -78,7 +78,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created payment methods`);
+  console.log(`Created payment methods`);
 
   // ==================== SEED DRIVERS ====================
   console.log('Creating drivers...');
@@ -132,7 +132,7 @@ async function main() {
     });
   }
 
-  console.log(`✅ Created ${drivers.length} drivers with location history`);
+  console.log(`Created ${drivers.length} drivers with location history`);
 
   // ==================== SEED PRICING CONFIGS ====================
   console.log('Creating pricing configs...');
@@ -164,7 +164,7 @@ async function main() {
     });
   }
 
-  console.log(`✅ Created ${rideTypes.length} pricing configs for Mumbai`);
+  console.log(`Created ${rideTypes.length} pricing configs for Mumbai`);
 
   // ==================== SEED SAMPLE RIDES ====================
   console.log('Creating sample rides...');
@@ -235,7 +235,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created sample rides`);
+  console.log(`Created sample rides`);
 
   // ==================== SEED SURGE ZONES ====================
   console.log('Creating surge zones...');
@@ -257,14 +257,14 @@ async function main() {
     },
   });
 
-  console.log(`✅ Created surge zones`);
+  console.log(`Created surge zones`);
 
   console.log('🎉 Seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error(' Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

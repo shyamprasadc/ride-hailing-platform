@@ -85,15 +85,15 @@ const redisPublisher = new Redis(redisConfig);
 
 // Connection event handlers
 redisClient.on('connect', () => {
-  console.log('✅ Redis client connected');
+  console.log('Redis client connected');
 });
 
 redisClient.on('error', (err: Error) => {
-  console.error('❌ Redis client error:', err);
+  console.error('Redis client error:', err);
 });
 
 redisClient.on('ready', () => {
-  console.log('✅ Redis client ready');
+  console.log('Redis client ready');
 });
 
 // ==================== GEOSPATIAL OPERATIONS ====================
@@ -681,7 +681,7 @@ export async function processLocationBatch(): Promise<void> {
     }
     
     await pipeline.exec();
-    console.log(`✅ Processed ${batch.length} location updates`);
+    console.log(`Processed ${batch.length} location updates`);
   } catch (error) {
     console.error('Error processing location batch:', error);
   }
@@ -858,7 +858,7 @@ export async function disconnect(): Promise<void> {
     await redisClient.quit();
     await redisSubscriber.quit();
     await redisPublisher.quit();
-    console.log('✅ Redis connections closed');
+    console.log('Redis connections closed');
   } catch (error) {
     console.error('Error disconnecting Redis:', error);
   }
