@@ -22,6 +22,10 @@ export const updateLocation = asyncHandler(async (req: Request, res: Response) =
 
   const result = await driverService.updateDriverLocation(id, location);
 
+  if (!result.success || !result.data) {
+    throw new BadRequestError('Failed to update driver location');
+  }
+
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -77,6 +81,7 @@ export const markArriving = asyncHandler(async (req: Request, res: Response) => 
   if (!result.success || !result.data) {
     throw new BadRequestError('Failed to update driver arriving status');
   }
+
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -93,6 +98,7 @@ export const markArrived = asyncHandler(async (req: Request, res: Response) => {
   if (!result.success || !result.data) {
     throw new BadRequestError('Failed to update driver arrived status');
   }
+
   return new SuccessResponse('OK', result.data).send(res);
 });
 
