@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import asyncHandler from '../helpers/asyncHandler';
+import { UpdateLocationRequest, AcceptRideRequest, DriverStatus } from '../core/Types';
 import { SuccessResponse } from '../core/ApiResponse';
 import { BadRequestError } from '../core/ApiError';
-import { UpdateLocationRequest, AcceptRideRequest, DriverStatus } from '../core/Types';
 import * as driverService from '../services/driverService';
 
 /**
