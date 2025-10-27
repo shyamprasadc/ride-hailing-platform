@@ -6,7 +6,7 @@ export const db = {
   uri: process.env.DATABASE_URL || '',
 };
 
-export const corsUrl = process.env.CORS_URL;
+export const corsOrigin = process.env.CORS_ORIGIN;
 
 export const tokenInfo = {
   accessTokenValidityDays: parseInt(process.env.ACCESS_TOKEN_VALIDITY_SEC || '0'),

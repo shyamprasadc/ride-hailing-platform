@@ -1,6 +1,8 @@
+import { Server as SocketIOServer } from 'socket.io';
 import Logger from './core/Logger';
-import { port } from './config';
+import { port, corsOrigin } from './config';
 import app from './app';
+// import { setupWebSocket } from '../src/utils/websocket';
 
 const server = app
   .listen(port, () => {
@@ -16,3 +18,13 @@ process.on('SIGTERM', () => {
   Logger.info('SIGTERM received');
   server.close();
 });
+
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: corsOrigin,
+    methods: ['GET', 'POST'],
+  },
+  path: '/socket.io',
+});
+
+// setupWebSocket(io);

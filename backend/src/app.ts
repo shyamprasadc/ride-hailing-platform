@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import Logger from './core/Logger';
 import cors from 'cors';
-import { corsUrl, environment } from './config';
+import { corsOrigin, environment } from './config';
 import { NotFoundError, ApiError, InternalError } from './core/ApiError';
 import routesV1 from './routes/v1';
 
@@ -13,9 +13,9 @@ app.use(
     limit: '10mb',
     extended: true,
     parameterLimit: 50000,
-  }),
+  })
 );
-app.use(cors({ origin: corsUrl, optionsSuccessStatus: 200 }));
+app.use(cors({ origin: corsOrigin, optionsSuccessStatus: 200 }));
 
 // Routes
 app.use('/v1', routesV1);
