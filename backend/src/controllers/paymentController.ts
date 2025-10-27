@@ -9,7 +9,7 @@ import { paymentService } from '../services/paymentService';
  * Process payment
  * POST /api/v1/payments
  */
-export const processPayment = asyncHandler(async (req: Request, res: Response) => {
+const processPayment = asyncHandler(async (req: Request, res: Response) => {
   const request: ProcessPaymentRequest = {
     tripId: req.body.trip_id,
     paymentMethodId: req.body.payment_method_id,
@@ -29,7 +29,7 @@ export const processPayment = asyncHandler(async (req: Request, res: Response) =
  * Get payment by trip ID
  * GET /api/v1/payments/trip/:tripId
  */
-export const getPaymentByTrip = asyncHandler(async (req: Request, res: Response) => {
+const getPaymentByTrip = asyncHandler(async (req: Request, res: Response) => {
   const { tripId } = req.params;
 
   const result = await paymentService.getPaymentByTripId(tripId);
@@ -45,7 +45,7 @@ export const getPaymentByTrip = asyncHandler(async (req: Request, res: Response)
  * Retry payment
  * POST /api/v1/payments/:id/retry
  */
-export const retryPayment = asyncHandler(async (req: Request, res: Response) => {
+const retryPayment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const result = await paymentService.retryPayment(id);
@@ -61,7 +61,7 @@ export const retryPayment = asyncHandler(async (req: Request, res: Response) => 
  * Process refund
  * POST /api/v1/payments/:id/refund
  */
-export const refundPayment = asyncHandler(async (req: Request, res: Response) => {
+const refundPayment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { amount, reason } = req.body;
 
@@ -73,3 +73,10 @@ export const refundPayment = asyncHandler(async (req: Request, res: Response) =>
 
   return new SuccessResponse('OK', result.data).send(res);
 });
+
+export default {
+  processPayment,
+  getPaymentByTrip,
+  retryPayment,
+  refundPayment,
+};

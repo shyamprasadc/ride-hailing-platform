@@ -9,7 +9,7 @@ import * as driverService from '../services/driverService';
  * Update driver location
  * POST /api/v1/drivers/:id/location
  */
-export const updateLocation = asyncHandler(async (req: Request, res: Response) => {
+const updateLocation = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const location: UpdateLocationRequest = {
@@ -33,7 +33,7 @@ export const updateLocation = asyncHandler(async (req: Request, res: Response) =
  * Update driver availability
  * POST /api/v1/drivers/:id/status
  */
-export const updateStatus = asyncHandler(async (req: Request, res: Response) => {
+const updateStatus = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -50,7 +50,7 @@ export const updateStatus = asyncHandler(async (req: Request, res: Response) => 
  * Accept ride request
  * POST /api/v1/drivers/:id/accept
  */
-export const acceptRide = asyncHandler(async (req: Request, res: Response) => {
+const acceptRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { ride_id } = req.body;
 
@@ -72,7 +72,7 @@ export const acceptRide = asyncHandler(async (req: Request, res: Response) => {
  * Mark driver as arriving
  * POST /api/v1/drivers/:id/arriving
  */
-export const markArriving = asyncHandler(async (req: Request, res: Response) => {
+const markArriving = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { ride_id } = req.body;
 
@@ -89,7 +89,7 @@ export const markArriving = asyncHandler(async (req: Request, res: Response) => 
  * Mark driver as arrived
  * POST /api/v1/drivers/:id/arrived
  */
-export const markArrived = asyncHandler(async (req: Request, res: Response) => {
+const markArrived = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { ride_id } = req.body;
 
@@ -106,7 +106,7 @@ export const markArrived = asyncHandler(async (req: Request, res: Response) => {
  * Get driver by ID
  * GET /api/v1/drivers/:id
  */
-export const getDriver = asyncHandler(async (req: Request, res: Response) => {
+const getDriver = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const result = await driverService.getDriverById(id);
@@ -122,7 +122,7 @@ export const getDriver = asyncHandler(async (req: Request, res: Response) => {
  * Get driver earnings
  * GET /api/v1/drivers/:id/earnings
  */
-export const getEarnings = asyncHandler(async (req: Request, res: Response) => {
+const getEarnings = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const startDate = req.query.start_date
     ? new Date(req.query.start_date as string)
@@ -137,3 +137,13 @@ export const getEarnings = asyncHandler(async (req: Request, res: Response) => {
 
   return new SuccessResponse('OK', result.data).send(res);
 });
+
+export default {
+  updateLocation,
+  updateStatus,
+  acceptRide,
+  markArriving,
+  markArrived,
+  getDriver,
+  getEarnings,
+};

@@ -128,7 +128,7 @@ export const updateDriverLocation = async (
     // Validate location
     const validation = validateLocation(location);
     if (!validation.success) {
-      //FIX return validation as Result<{ success: boolean }>;
+      // FIX return validation as Result<{ success: boolean }>;
       return validation as any;
     }
 
@@ -610,7 +610,6 @@ export const getDriverEarnings = async (
   }
 };
 
-// Export all functions
 export default {
   updateDriverLocation,
   updateDriverAvailability,

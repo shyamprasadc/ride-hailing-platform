@@ -1,11 +1,6 @@
 import { Request, Response } from 'express';
 import asyncHandler from '../helpers/asyncHandler';
-import {
-  AuthenticatedRequest,
-  CreateRideRequest,
-  RideType,
-  CancelRideRequest,
-} from '../core/Types';
+import { CreateRideRequest, RideType, CancelRideRequest } from '../core/Types';
 import { SuccessResponse } from '../core/ApiResponse';
 import { BadRequestError } from '../core/ApiError';
 import * as rideService from '../services/rideService';
@@ -14,7 +9,7 @@ import * as rideService from '../services/rideService';
  * Create new ride request
  * POST /api/v1/rides
  */
-export const createRide = asyncHandler(async (req: Request, res: Response) => {
+const createRide = asyncHandler(async (req: Request, res: Response) => {
   const request: CreateRideRequest = {
     riderId: req.body.rider_id,
     pickup: req.body.pickup,
@@ -26,11 +21,11 @@ export const createRide = asyncHandler(async (req: Request, res: Response) => {
     idempotencyKey: req.body.idempotency_key || `ride_${Date.now()}_${Math.random()}`,
   };
 
-  // const result = await rideService.createRide(request);
+  const result = await rideService.createRide(request);
 
-  // if (!result.success || !result.data) {
-  //   throw new BadRequestError('Failed to create ride');
-  // }
+  if (!result.success || !result.data) {
+    throw new BadRequestError('Failed to create ride');
+  }
 
   return new SuccessResponse('OK', null).send(res);
 });
@@ -39,14 +34,14 @@ export const createRide = asyncHandler(async (req: Request, res: Response) => {
  * Get ride by ID
  * GET /api/v1/rides/:id
  */
-export const getRide = asyncHandler(async (req: Request, res: Response) => {
+const getRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  // const result = await rideService.getRideById(id);
+  const result = await rideService.getRideById(id);
 
-  // if (!result.success || !result.data) {
-  //   throw new BadRequestError('Failed to get ride');
-  // }
+  if (!result.success || !result.data) {
+    throw new BadRequestError('Failed to get ride');
+  }
 
   return new SuccessResponse('OK', null).send(res);
 });
@@ -55,19 +50,19 @@ export const getRide = asyncHandler(async (req: Request, res: Response) => {
  * Get rider's ride history
  * GET /api/v1/rides/rider/:riderId/history
  */
-export const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
+const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
   const { riderId } = req.params;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
-  // const result = await rideService.getRiderRideHistory(riderId, {
-  //   page,
-  //   limit,
-  // });
+  const result = await rideService.getRiderRideHistory(riderId, {
+    page,
+    limit,
+  });
 
-  // if (!result.success || !result.data) {
-  //   throw new BadRequestError('Failed to get ride history');
-  // }
+  if (!result.success || !result.data) {
+    throw new BadRequestError('Failed to get ride history');
+  }
 
   return new SuccessResponse('OK', null).send(res);
 });
@@ -76,7 +71,7 @@ export const getRiderHistory = asyncHandler(async (req: Request, res: Response) 
  * Cancel ride
  * POST /api/v1/rides/:id/cancel
  */
-export const cancelRide = asyncHandler(async (req: Request, res: Response) => {
+const cancelRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const request: CancelRideRequest = {
@@ -85,11 +80,18 @@ export const cancelRide = asyncHandler(async (req: Request, res: Response) => {
     reason: req.body.reason,
   };
 
-  // const result = await rideService.cancelRide(request);
+  const result = await rideService.cancelRide(request);
 
-  // if (!result.success || !result.data) {
-  //   throw new BadRequestError('Failed to get cancel ride');
-  // }
+  if (!result.success || !result.data) {
+    throw new BadRequestError('Failed to get cancel ride');
+  }
 
   return new SuccessResponse('OK', null).send(res);
 });
+
+export default {
+  createRide,
+  getRide,
+  getRiderHistory,
+  cancelRide,
+};

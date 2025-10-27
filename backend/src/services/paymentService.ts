@@ -365,7 +365,6 @@ export const processRefund = async (
   }
 };
 
-// Export payment service
 export const paymentService = {
   processPayment,
   getPaymentByTripId,

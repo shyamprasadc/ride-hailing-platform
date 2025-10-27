@@ -370,7 +370,6 @@ export const getTripById = async (tripId: string): Promise<Result<TripResponse>>
   }
 };
 
-// Export trip service
 export default {
   startTrip,
   endTrip,
