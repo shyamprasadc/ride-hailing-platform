@@ -7,6 +7,7 @@ import {
   NotFoundResponse,
   BadRequestResponse,
   ForbiddenResponse,
+  TooManyRequestsResponse,
 } from './ApiResponse';
 
 enum ErrorType {
@@ -20,6 +21,7 @@ enum ErrorType {
   NO_DATA = 'NoDataError',
   BAD_REQUEST = 'BadRequestError',
   FORBIDDEN = 'ForbiddenError',
+  TOO_MANY_REQUESTS = 'TooManyRequestsError',
 }
 
 export abstract class ApiError extends Error {
@@ -45,6 +47,8 @@ export abstract class ApiError extends Error {
         return new BadRequestResponse(err.message).send(res);
       case ErrorType.FORBIDDEN:
         return new ForbiddenResponse(err.message).send(res);
+      case ErrorType.TOO_MANY_REQUESTS:
+        return new TooManyRequestsResponse(err.message).send(res);
       default: {
         let message = err.message;
         // Do not send failure message in production as it may send sensitive data
@@ -82,6 +86,12 @@ export class NotFoundError extends ApiError {
 export class ForbiddenError extends ApiError {
   constructor(message = 'Permission denied') {
     super(ErrorType.FORBIDDEN, message);
+  }
+}
+
+export class TooManyRequestsError extends ApiError {
+  constructor(message = 'Too Many Requests') {
+    super(ErrorType.TOO_MANY_REQUESTS, message);
   }
 }
 

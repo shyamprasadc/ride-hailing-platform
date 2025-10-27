@@ -14,6 +14,7 @@ enum ResponseStatus {
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
   NOT_FOUND = 404,
+  TOO_MANY_REQUESTS = 429,
   INTERNAL_ERROR = 500,
 }
 
@@ -21,7 +22,7 @@ abstract class ApiResponse {
   constructor(
     protected statusCode: StatusCode,
     protected status: ResponseStatus,
-    protected message: string,
+    protected message: string
   ) {}
 
   protected prepare<T extends ApiResponse>(res: Response, response: T): Response {
@@ -64,6 +65,12 @@ export class NotFoundResponse extends ApiResponse {
 export class ForbiddenResponse extends ApiResponse {
   constructor(message = 'Forbidden') {
     super(StatusCode.FAILURE, ResponseStatus.FORBIDDEN, message);
+  }
+}
+
+export class TooManyRequestsResponse extends ApiResponse {
+  constructor(message = 'Too Many Requests') {
+    super(StatusCode.FAILURE, ResponseStatus.TOO_MANY_REQUESTS, message);
   }
 }
 
