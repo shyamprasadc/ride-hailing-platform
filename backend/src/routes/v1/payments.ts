@@ -1,15 +1,10 @@
 import express from 'express';
-import {
-  processPayment,
-  getPaymentByTrip,
-  retryPayment,
-  refundPayment,
-} from '../../controllers/paymentController';
+import payment from '../../controllers/paymentController';
 const router = express.Router();
 
-router.post('/', processPayment);
-router.get('/trip/:tripId', getPaymentByTrip);
-router.post('/:id/retry', retryPayment);
-router.post('/:id/refund', refundPayment);
+router.post('/', payment.processPayment);
+router.get('/trip/:tripId', payment.getPaymentByTrip);
+router.post('/:id/retry', payment.retryPayment);
+router.post('/:id/refund', payment.refundPayment);
 
 export default router;

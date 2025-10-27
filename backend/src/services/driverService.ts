@@ -9,6 +9,7 @@ import {
   DriverStatus,
   RideStatus,
 } from '../core/Types';
+import Logger from '../core/Logger';
 import {
   addAvailableDriver,
   removeAvailableDriver,
@@ -178,7 +179,7 @@ export const updateDriverLocation = async (
 
     return { success: true, data: { success: true } };
   } catch (error) {
-    console.error('Error updating driver location:', error);
+    Logger.error('Error updating driver location:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -221,7 +222,7 @@ export const updateDriverAvailability = async (
 
     return { success: true, data: driverInfo };
   } catch (error) {
-    console.error('Error updating driver availability:', error);
+    Logger.error('Error updating driver availability:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -343,7 +344,7 @@ export const acceptRide = async (
       });
     });
   } catch (error) {
-    console.error('Error accepting ride:', error);
+    Logger.error('Error accepting ride:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -375,7 +376,7 @@ export const getDriverById = async (driverId: string): Promise<Result<DriverInfo
 
     return { success: true, data: driverInfo };
   } catch (error) {
-    console.error('Error getting driver:', error);
+    Logger.error('Error getting driver:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -439,7 +440,7 @@ export const updateDriverArriving = async (
       return { success: true, data: { success: true } };
     });
   } catch (error) {
-    console.error('Error updating driver arriving:', error);
+    Logger.error('Error updating driver arriving:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -544,7 +545,7 @@ export const markDriverArrived = async (
       return { success: true, data: { success: true, otp } };
     });
   } catch (error) {
-    console.error('Error marking driver arrived:', error);
+    Logger.error('Error marking driver arrived:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -605,7 +606,7 @@ export const getDriverEarnings = async (
       },
     };
   } catch (error) {
-    console.error('Error getting driver earnings:', error);
+    Logger.error('Error getting driver earnings:', error);
     return { success: false, error: error as Error };
   }
 };

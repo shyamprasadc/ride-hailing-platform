@@ -15,6 +15,7 @@ import {
   MatchingOptions,
   DriverInfo,
 } from '../core/Types';
+import Logger from '../core/Logger';
 import {
   cacheRide,
   getCachedRide,
@@ -125,7 +126,7 @@ const getSurgeMultiplier = async (lat: number, lng: number): Promise<number> => 
 
     return surgeZone?.currentSurge || 1.0;
   } catch (error) {
-    console.error('Error getting surge multiplier:', error);
+    Logger.error('Error getting surge multiplier:', error);
     return 1.0; // Default to no surge
   }
 };
@@ -339,12 +340,12 @@ export const createRide = async (request: CreateRideRequest): Promise<Result<Rid
 
     // Start matching process asynchronously
     findAndMatchDriver(ride.id, request.pickup, request.rideType).catch((error) => {
-      console.error('Error in background matching:', error);
+      Logger.error('Error in background matching:', error);
     });
 
     return { success: true, data: response };
   } catch (error) {
-    console.error('Error creating ride:', error);
+    Logger.error('Error creating ride:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -387,7 +388,7 @@ export const getRideById = async (rideId: string): Promise<Result<RideResponse>>
 
     return { success: true, data: response };
   } catch (error) {
-    console.error('Error getting ride:', error);
+    Logger.error('Error getting ride:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -434,7 +435,7 @@ export const getRiderRideHistory = async (
       },
     };
   } catch (error) {
-    console.error('Error getting ride history:', error);
+    Logger.error('Error getting ride history:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -471,7 +472,7 @@ export const getActiveRides = async (riderId: string): Promise<Result<RideRespon
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error getting active rides:', error);
+    Logger.error('Error getting active rides:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -593,7 +594,7 @@ export const cancelRide = async (request: CancelRideRequest): Promise<Result<Rid
       return { success: true, data: response };
     });
   } catch (error) {
-    console.error('Error cancelling ride:', error);
+    Logger.error('Error cancelling ride:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -631,7 +632,7 @@ export const updateRideStatus = async (
 
     return { success: true, data: response };
   } catch (error) {
-    console.error('Error updating ride status:', error);
+    Logger.error('Error updating ride status:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -747,7 +748,7 @@ export const matchRideWithDriver = async (
       });
     });
   } catch (error) {
-    console.error('Error matching ride with driver:', error);
+    Logger.error('Error matching ride with driver:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -774,14 +775,14 @@ const findAndMatchDriver = async (
       const nearbyDrivers = await findNearbyDrivers(pickup.lat, pickup.lng, options.radiusKm, 10);
 
       if (nearbyDrivers.length === 0) {
-        console.log(`No drivers found near ride ${rideId}, attempt ${attempts}`);
+        Logger.info(`No drivers found near ride ${rideId}, attempt ${attempts}`);
 
         // Wait before retry
         await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
       }
 
-      console.log(`Found ${nearbyDrivers.length} drivers for ride ${rideId}, attempt ${attempts}`);
+      Logger.info(`Found ${nearbyDrivers.length} drivers for ride ${rideId}, attempt ${attempts}`);
 
       // Sort drivers by distance and rating
       const sortedDrivers = nearbyDrivers.sort((a, b) => {
@@ -800,22 +801,22 @@ const findAndMatchDriver = async (
         });
 
         if (currentRide?.status !== RideStatus.SEARCHING) {
-          console.log(`Ride ${rideId} already matched or cancelled`);
+          Logger.info(`Ride ${rideId} already matched or cancelled`);
           return;
         }
 
         // In production, send offer to driver and wait for acceptance
         // For now, auto-match with first available driver
-        console.log(`Attempting to match ride ${rideId} with driver ${driver.driverId}`);
+        Logger.info(`Attempting to match ride ${rideId} with driver ${driver.driverId}`);
 
         const matchResult = await matchRideWithDriver(rideId, driver.driverId);
 
         if (matchResult.success) {
-          console.log(`Successfully matched ride ${rideId} with driver ${driver.driverId}`);
+          Logger.info(`Successfully matched ride ${rideId} with driver ${driver.driverId}`);
           matched = true;
           break;
         } else {
-          console.log(
+          Logger.info(
             `Failed to match with driver ${driver.driverId}:`,
             matchResult.error?.message
           );
@@ -829,7 +830,7 @@ const findAndMatchDriver = async (
     }
 
     if (!matched) {
-      console.log(`Failed to match ride ${rideId} after ${attempts} attempts`);
+      Logger.info(`Failed to match ride ${rideId} after ${attempts} attempts`);
 
       // Update ride status to failed
       await prisma.ride.update({
@@ -861,7 +862,7 @@ const findAndMatchDriver = async (
       });
     }
   } catch (error) {
-    console.error('Error in driver matching:', error);
+    Logger.error('Error in driver matching:', error);
   }
 };
 

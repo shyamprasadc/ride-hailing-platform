@@ -1,10 +1,10 @@
 import express from 'express';
-import { createRide, getRide, getRiderHistory, cancelRide } from '../../controllers/rideController';
+import ride from '../../controllers/rideController';
 const router = express.Router();
 
-router.post('/', createRide);
-router.get('/:id', getRide);
-router.get('/rider/:riderId/history', getRiderHistory);
-router.post('/:id/cancel', cancelRide);
+router.post('/', ride.createRide);
+router.get('/:id', ride.getRide);
+router.get('/rider/:riderId/history', ride.getRiderHistory);
+router.post('/:id/cancel', ride.cancelRide);
 
 export default router;

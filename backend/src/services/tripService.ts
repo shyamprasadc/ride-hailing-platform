@@ -10,6 +10,7 @@ import {
   RideStatus,
   TripStatus,
 } from '../core/Types';
+import Logger from '../core/Logger';
 import { publishRideUpdate, invalidateRideCache, trackActiveRide } from '../utils/redis';
 
 const prisma = new PrismaClient();
@@ -166,7 +167,7 @@ export const startTrip = async (request: StartTripRequest): Promise<Result<TripR
       return { success: true, data: response };
     });
   } catch (error) {
-    console.error('Error starting trip:', error);
+    Logger.error('Error starting trip:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -337,7 +338,7 @@ export const endTrip = async (request: EndTripRequest): Promise<Result<TripRespo
       return { success: true, data: response };
     });
   } catch (error) {
-    console.error('Error ending trip:', error);
+    Logger.error('Error ending trip:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -365,7 +366,7 @@ export const getTripById = async (tripId: string): Promise<Result<TripResponse>>
     const response = toTripResponse(trip, trip.ride, trip.driver);
     return { success: true, data: response };
   } catch (error) {
-    console.error('Error getting trip:', error);
+    Logger.error('Error getting trip:', error);
     return { success: false, error: error as Error };
   }
 };

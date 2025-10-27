@@ -1,21 +1,13 @@
 import express from 'express';
-import {
-  updateLocation,
-  updateStatus,
-  acceptRide,
-  markArriving,
-  markArrived,
-  getDriver,
-  getEarnings,
-} from '../../controllers/driverController';
+import driver from '../../controllers/driverController';
 const router = express.Router();
 
-router.post('/:id/location', updateLocation);
-router.post('/:id/status', updateStatus);
-router.post('/:id/accept', acceptRide);
-router.post('/:id/arriving', markArriving);
-router.post('/:id/arrived', markArrived);
-router.get('/:id', getDriver);
-router.get('/:id/earnings', getEarnings);
+router.post('/:id/location', driver.updateLocation);
+router.post('/:id/status', driver.updateStatus);
+router.post('/:id/accept', driver.acceptRide);
+router.post('/:id/arriving', driver.markArriving);
+router.post('/:id/arrived', driver.markArrived);
+router.get('/:id', driver.getDriver);
+router.get('/:id/earnings', driver.getEarnings);
 
 export default router;

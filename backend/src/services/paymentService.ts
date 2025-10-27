@@ -8,6 +8,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '../core/Types';
+import Logger from '../core/Logger';
 import { checkIdempotency, storeIdempotentResponse, getIdempotentResponse } from '../utils/redis';
 const prisma = new PrismaClient();
 
@@ -127,7 +128,7 @@ export const processPayment = async (
       return { success: true, data: response };
     });
   } catch (error) {
-    console.error('Error processing payment:', error);
+    Logger.error('Error processing payment:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -198,7 +199,7 @@ export const getPaymentByTripId = async (tripId: string): Promise<Result<Payment
 
     return { success: true, data: response };
   } catch (error) {
-    console.error('Error getting payment:', error);
+    Logger.error('Error getting payment:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -273,7 +274,7 @@ export const retryPayment = async (paymentId: string): Promise<Result<PaymentRes
       return { success: true, data: response };
     });
   } catch (error) {
-    console.error('Error retrying payment:', error);
+    Logger.error('Error retrying payment:', error);
     return { success: false, error: error as Error };
   }
 };
@@ -360,7 +361,7 @@ export const processRefund = async (
       };
     });
   } catch (error) {
-    console.error('Error processing refund:', error);
+    Logger.error('Error processing refund:', error);
     return { success: false, error: error as Error };
   }
 };

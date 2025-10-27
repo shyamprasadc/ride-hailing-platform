@@ -1,3 +1,5 @@
+import Logger from '../core/Logger';
+import { redis } from '../config';
 import Redis from 'ioredis';
 
 interface RedisConfig {
@@ -60,10 +62,10 @@ interface CacheOptions {
 // ==================== REDIS CLIENT CONFIGURATION ====================
 
 const redisConfig: RedisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD || undefined,
-  db: parseInt(process.env.REDIS_DB || '0', 10),
+  host: redis.host,
+  port: parseInt(redis.port, 10),
+  password: redis.password,
+  db: parseInt(redis.db, 10),
   retryStrategy: (times: number): number => {
     const delay = Math.min(times * 50, 2000);
     return delay;
@@ -80,15 +82,15 @@ const redisPublisher = new Redis(redisConfig);
 
 // Connection event handlers
 redisClient.on('connect', () => {
-  console.log('Redis client connected');
+  Logger.info('Redis client connected');
 });
 
 redisClient.on('error', (err: Error) => {
-  console.error('Redis client error:', err);
+  Logger.error('Redis client error:', err);
 });
 
 redisClient.on('ready', () => {
-  console.log('Redis client ready');
+  Logger.info('Redis client ready');
 });
 
 // ==================== GEOSPATIAL OPERATIONS ====================
@@ -125,7 +127,7 @@ export async function addAvailableDriver(
 
     return true;
   } catch (error) {
-    console.error('Error adding available driver:', error);
+    Logger.error('Error adding available driver:', error);
     return false;
   }
 }
@@ -141,7 +143,7 @@ export async function removeAvailableDriver(driverId: string): Promise<boolean> 
     await redisClient.del(`driver:${driverId}:meta`);
     return true;
   } catch (error) {
-    console.error('Error removing available driver:', error);
+    Logger.error('Error removing available driver:', error);
     return false;
   }
 }
@@ -185,7 +187,7 @@ export async function findNearbyDrivers(
 
     return drivers;
   } catch (error) {
-    console.error('Error finding nearby drivers:', error);
+    Logger.error('Error finding nearby drivers:', error);
     return [];
   }
 }
@@ -214,7 +216,7 @@ export async function updateDriverLocation(
 
     return true;
   } catch (error) {
-    console.error('Error updating driver location:', error);
+    Logger.error('Error updating driver location:', error);
     return false;
   }
 }
@@ -235,7 +237,7 @@ export async function getDriverLocation(driverId: string): Promise<Location | nu
       lng: parseFloat(lng!),
     };
   } catch (error) {
-    console.error('Error getting driver location:', error);
+    Logger.error('Error getting driver location:', error);
     return null;
   }
 }
@@ -256,7 +258,7 @@ export async function cacheGet<T = any>(key: string): Promise<T | null> {
       return value as T;
     }
   } catch (error) {
-    console.error('Error getting from cache:', error);
+    Logger.error('Error getting from cache:', error);
     return null;
   }
 }
@@ -280,7 +282,7 @@ export async function cacheSet<T = any>(
 
     return true;
   } catch (error) {
-    console.error('Error setting cache:', error);
+    Logger.error('Error setting cache:', error);
     return false;
   }
 }
@@ -293,7 +295,7 @@ export async function cacheDel(key: string): Promise<boolean> {
     await redisClient.del(key);
     return true;
   } catch (error) {
-    console.error('Error deleting from cache:', error);
+    Logger.error('Error deleting from cache:', error);
     return false;
   }
 }
@@ -309,7 +311,7 @@ export async function cacheDelPattern(pattern: string): Promise<number> {
     }
     return keys.length;
   } catch (error) {
-    console.error('Error deleting cache pattern:', error);
+    Logger.error('Error deleting cache pattern:', error);
     return 0;
   }
 }
@@ -375,7 +377,7 @@ export async function checkIdempotency(
     const result = await redisClient.set(key, '1', 'EX', expirySeconds, 'NX');
     return result === 'OK'; // Returns true if key was set (first request)
   } catch (error) {
-    console.error('Error checking idempotency:', error);
+    Logger.error('Error checking idempotency:', error);
     return false;
   }
 }
@@ -439,7 +441,7 @@ export async function checkRateLimit(
       resetIn: windowSeconds,
     };
   } catch (error) {
-    console.error('Error checking rate limit:', error);
+    Logger.error('Error checking rate limit:', error);
     return { allowed: true, current: 0, limit, resetIn: windowSeconds };
   }
 }
@@ -458,7 +460,7 @@ export async function publishLocationUpdate(
     await redisPublisher.publish(channel, JSON.stringify(locationData));
     return true;
   } catch (error) {
-    console.error('Error publishing location update:', error);
+    Logger.error('Error publishing location update:', error);
     return false;
   }
 }
@@ -474,7 +476,7 @@ export function subscribeToLocationUpdates(
 
   redisSubscriber.subscribe(channel, (err) => {
     if (err) {
-      console.error('Error subscribing to location updates:', err);
+      Logger.error('Error subscribing to location updates:', err);
     }
   });
 
@@ -484,7 +486,7 @@ export function subscribeToLocationUpdates(
         const data: LocationUpdate = JSON.parse(message);
         callback(data);
       } catch (error) {
-        console.error('Error parsing location update:', error);
+        Logger.error('Error parsing location update:', error);
       }
     }
   };
@@ -506,7 +508,7 @@ export async function publishRideUpdate(rideId: string, updateData: any): Promis
     await redisPublisher.publish(channel, JSON.stringify(updateData));
     return true;
   } catch (error) {
-    console.error('Error publishing ride update:', error);
+    Logger.error('Error publishing ride update:', error);
     return false;
   }
 }
@@ -519,7 +521,7 @@ export function subscribeToRideUpdates(rideId: string, callback: (data: any) => 
 
   redisSubscriber.subscribe(channel, (err) => {
     if (err) {
-      console.error('Error subscribing to ride updates:', err);
+      Logger.error('Error subscribing to ride updates:', err);
     }
   });
 
@@ -529,7 +531,7 @@ export function subscribeToRideUpdates(rideId: string, callback: (data: any) => 
         const data = JSON.parse(message);
         callback(data);
       } catch (error) {
-        console.error('Error parsing ride update:', error);
+        Logger.error('Error parsing ride update:', error);
       }
     }
   };
@@ -562,7 +564,7 @@ export async function acquireLock(
     }
     return null;
   } catch (error) {
-    console.error('Error acquiring lock:', error);
+    Logger.error('Error acquiring lock:', error);
     return null;
   }
 }
@@ -586,7 +588,7 @@ export async function releaseLock(lockKey: string, lockValue: string): Promise<b
     const result = await redisClient.eval(script, 1, key, lockValue);
     return result === 1;
   } catch (error) {
-    console.error('Error releasing lock:', error);
+    Logger.error('Error releasing lock:', error);
     return false;
   }
 }
@@ -667,9 +669,9 @@ export async function processLocationBatch(): Promise<void> {
     }
 
     await pipeline.exec();
-    console.log(`Processed ${batch.length} location updates`);
+    Logger.info(`Processed ${batch.length} location updates`);
   } catch (error) {
-    console.error('Error processing location batch:', error);
+    Logger.error('Error processing location batch:', error);
   }
 }
 
@@ -691,7 +693,7 @@ export async function incrementCounter(
 
     return result;
   } catch (error) {
-    console.error('Error incrementing counter:', error);
+    Logger.error('Error incrementing counter:', error);
     return null;
   }
 }
@@ -704,7 +706,7 @@ export async function getCounter(key: string): Promise<number> {
     const value = await redisClient.get(key);
     return value ? parseInt(value, 10) : 0;
   } catch (error) {
-    console.error('Error getting counter:', error);
+    Logger.error('Error getting counter:', error);
     return 0;
   }
 }
@@ -724,7 +726,7 @@ export async function trackActiveRide(rideId: string, add: boolean = true): Prom
 
     return await redisClient.scard(key);
   } catch (error) {
-    console.error('Error tracking active ride:', error);
+    Logger.error('Error tracking active ride:', error);
     return 0;
   }
 }
@@ -738,7 +740,7 @@ export async function getActiveRidesCount(): Promise<number> {
   try {
     return await redisClient.scard(key);
   } catch (error) {
-    console.error('Error getting active rides count:', error);
+    Logger.error('Error getting active rides count:', error);
     return 0;
   }
 }
@@ -774,7 +776,7 @@ export async function updateSurgeMetrics(
 
     return multiplier;
   } catch (error) {
-    console.error('Error updating surge metrics:', error);
+    Logger.error('Error updating surge metrics:', error);
     return 1.0;
   }
 }
@@ -789,7 +791,7 @@ export async function getSurgeMultiplier(zone: string): Promise<number> {
     const data = await redisClient.hgetall(key);
     return data.multiplier ? parseFloat(data.multiplier) : 1.0;
   } catch (error) {
-    console.error('Error getting surge multiplier:', error);
+    Logger.error('Error getting surge multiplier:', error);
     return 1.0;
   }
 }
@@ -804,7 +806,7 @@ export async function healthCheck(): Promise<boolean> {
     const result = await redisClient.ping();
     return result === 'PONG';
   } catch (error) {
-    console.error('Redis health check failed:', error);
+    Logger.error('Redis health check failed:', error);
     return false;
   }
 }
@@ -829,7 +831,7 @@ export async function getRedisInfo(): Promise<Record<string, string> | null> {
 
     return data;
   } catch (error) {
-    console.error('Error getting Redis info:', error);
+    Logger.error('Error getting Redis info:', error);
     return null;
   }
 }
@@ -844,9 +846,9 @@ export async function disconnect(): Promise<void> {
     await redisClient.quit();
     await redisSubscriber.quit();
     await redisPublisher.quit();
-    console.log('Redis connections closed');
+    Logger.info('Redis connections closed');
   } catch (error) {
-    console.error('Error disconnecting Redis:', error);
+    Logger.error('Error disconnecting Redis:', error);
   }
 }
 

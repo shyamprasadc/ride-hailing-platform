@@ -9,7 +9,7 @@ async function main() {
 
   // ==================== SEED RIDERS ====================
   console.log('Creating riders...');
-  
+
   const rider1 = await prisma.rider.create({
     data: {
       name: 'John Doe',
@@ -90,8 +90,8 @@ async function main() {
     { name: 'Raj Kumar', lat: 19.0596, lng: 72.8295, vehicle: 'SEDAN' },
     { name: 'Amit Sharma', lat: 19.0656, lng: 72.8326, vehicle: 'SUV' },
     { name: 'Vikram Singh', lat: 19.0526, lng: 72.8456, vehicle: 'HATCHBACK' },
-    { name: 'Sanjay Yadav', lat: 19.0700, lng: 72.8200, vehicle: 'SEDAN' },
-    { name: 'Rahul Mehta', lat: 19.0550, lng: 72.8300, vehicle: 'LUXURY' },
+    { name: 'Sanjay Yadav', lat: 19.07, lng: 72.82, vehicle: 'SEDAN' },
+    { name: 'Rahul Mehta', lat: 19.055, lng: 72.83, vehicle: 'LUXURY' },
   ];
 
   for (let i = 0; i < mumbaiDrivers.length; i++) {
@@ -104,10 +104,15 @@ async function main() {
         licenseNumber: `DL-${1000 + i}`,
         vehicleType: d.vehicle,
         vehicleNumber: `MH02AB${1000 + i}`,
-        vehicleModel: d.vehicle === 'SEDAN' ? 'Honda City' : d.vehicle === 'SUV' ? 'Toyota Innova' : 'Maruti Swift',
+        vehicleModel:
+          d.vehicle === 'SEDAN'
+            ? 'Honda City'
+            : d.vehicle === 'SUV'
+            ? 'Toyota Innova'
+            : 'Maruti Swift',
         vehicleColor: i % 2 === 0 ? 'White' : 'Black',
         status: 'AVAILABLE',
-        rating: 4.5 + (Math.random() * 0.5),
+        rating: 4.5 + Math.random() * 0.5,
         totalTrips: Math.floor(Math.random() * 500) + 100,
         acceptanceRate: 85 + Math.random() * 10,
         currentLat: d.lat,
@@ -177,7 +182,7 @@ async function main() {
       pickupLat: 19.0596,
       pickupLng: 72.8295,
       pickupAddress: 'Bandra West, Mumbai',
-      dropoffLat: 19.0760,
+      dropoffLat: 19.076,
       dropoffLng: 72.8777,
       dropoffAddress: 'Andheri East, Mumbai',
       rideType: 'STANDARD',
@@ -218,8 +223,8 @@ async function main() {
   await prisma.ride.create({
     data: {
       riderId: rider2.id,
-      pickupLat: 19.0700,
-      pickupLng: 72.8200,
+      pickupLat: 19.07,
+      pickupLng: 72.82,
       pickupAddress: 'Linking Road, Bandra',
       dropoffLat: 19.1136,
       dropoffLng: 72.9083,
@@ -245,10 +250,10 @@ async function main() {
       name: 'Bandra High Demand Zone',
       region: 'Mumbai',
       boundaries: [
-        { lat: 19.050, lng: 72.820 },
-        { lat: 19.050, lng: 72.840 },
-        { lat: 19.070, lng: 72.840 },
-        { lat: 19.070, lng: 72.820 },
+        { lat: 19.05, lng: 72.82 },
+        { lat: 19.05, lng: 72.84 },
+        { lat: 19.07, lng: 72.84 },
+        { lat: 19.07, lng: 72.82 },
       ],
       currentSurge: 1.5,
       activeRides: 25,
@@ -279,7 +284,7 @@ main()
 async function findNearbyDrivers(lat, lng, radiusKm = 5, vehicleType = null) {
   // Using Haversine formula approximation
   const latDelta = radiusKm / 111.32; // 1 degree lat ≈ 111.32 km
-  const lngDelta = radiusKm / (111.32 * Math.cos(lat * Math.PI / 180));
+  const lngDelta = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180));
 
   const whereClause = {
     status: 'AVAILABLE',
