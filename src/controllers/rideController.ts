@@ -7,7 +7,7 @@ import * as rideService from '../services/rideService';
 
 /**
  * Create new ride request
- * POST /api/v1/rides
+ * POST /v1/rides
  */
 const createRide = asyncHandler(async (req: Request, res: Response) => {
   const request: CreateRideRequest = {
@@ -32,7 +32,7 @@ const createRide = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get ride by ID
- * GET /api/v1/rides/:id
+ * GET /v1/rides/:id
  */
 const getRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -48,7 +48,7 @@ const getRide = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get rider's ride history
- * GET /api/v1/rides/rider/:riderId/history
+ * GET /v1/rides/rider/:riderId/history
  */
 const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
   const { riderId } = req.params;
@@ -69,7 +69,7 @@ const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Cancel ride
- * POST /api/v1/rides/:id/cancel
+ * POST /v1/rides/:id/cancel
  */
 const cancelRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

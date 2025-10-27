@@ -7,7 +7,7 @@ import * as tripService from '../services/tripService';
 
 /**
  * Start trip
- * POST /api/v1/trips/:id/start
+ * POST /v1/trips/:id/start
  */
 const startTrip = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -28,7 +28,7 @@ const startTrip = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * End trip
- * POST /api/v1/trips/:id/end
+ * POST /v1/trips/:id/end
  */
 const endTrip = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -51,7 +51,7 @@ const endTrip = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get trip by ID
- * GET /api/v1/trips/:id
+ * GET /v1/trips/:id
  */
 const getTrip = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

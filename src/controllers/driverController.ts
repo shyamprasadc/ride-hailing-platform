@@ -7,7 +7,7 @@ import * as driverService from '../services/driverService';
 
 /**
  * Update driver location
- * POST /api/v1/drivers/:id/location
+ * POST /v1/drivers/:id/location
  */
 const updateLocation = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -31,7 +31,7 @@ const updateLocation = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Update driver availability
- * POST /api/v1/drivers/:id/status
+ * POST /v1/drivers/:id/status
  */
 const updateStatus = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -48,7 +48,7 @@ const updateStatus = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Accept ride request
- * POST /api/v1/drivers/:id/accept
+ * POST /v1/drivers/:id/accept
  */
 const acceptRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -70,7 +70,7 @@ const acceptRide = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Mark driver as arriving
- * POST /api/v1/drivers/:id/arriving
+ * POST /v1/drivers/:id/arriving
  */
 const markArriving = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -87,7 +87,7 @@ const markArriving = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Mark driver as arrived
- * POST /api/v1/drivers/:id/arrived
+ * POST /v1/drivers/:id/arrived
  */
 const markArrived = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -104,7 +104,7 @@ const markArrived = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get driver by ID
- * GET /api/v1/drivers/:id
+ * GET /v1/drivers/:id
  */
 const getDriver = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -120,7 +120,7 @@ const getDriver = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get driver earnings
- * GET /api/v1/drivers/:id/earnings
+ * GET /v1/drivers/:id/earnings
  */
 const getEarnings = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

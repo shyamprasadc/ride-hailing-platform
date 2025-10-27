@@ -1,4 +1,4 @@
-import Logger from '../core/Logger';
+import Logger from './Logger';
 import newrelicMetric from '../utils/newrelic';
 import { performance, PerformanceObserver } from 'perf_hooks';
 

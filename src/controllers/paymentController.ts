@@ -7,7 +7,7 @@ import { paymentService } from '../services/paymentService';
 
 /**
  * Process payment
- * POST /api/v1/payments
+ * POST /v1/payments
  */
 const processPayment = asyncHandler(async (req: Request, res: Response) => {
   const request: ProcessPaymentRequest = {
@@ -27,7 +27,7 @@ const processPayment = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get payment by trip ID
- * GET /api/v1/payments/trip/:tripId
+ * GET /v1/payments/trip/:tripId
  */
 const getPaymentByTrip = asyncHandler(async (req: Request, res: Response) => {
   const { tripId } = req.params;
@@ -43,7 +43,7 @@ const getPaymentByTrip = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Retry payment
- * POST /api/v1/payments/:id/retry
+ * POST /v1/payments/:id/retry
  */
 const retryPayment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -59,7 +59,7 @@ const retryPayment = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Process refund
- * POST /api/v1/payments/:id/refund
+ * POST /v1/payments/:id/refund
  */
 const refundPayment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
