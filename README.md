@@ -1,29 +1,78 @@
 # ride-hailing-platform
 
 ## 1. System Architecture Overview
+### High-Level Architecture
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        React Frontend                        │
-│  (Rider App, Driver App, Real-time Updates via WebSocket)  │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────────────┐
-│                     API Gateway / Load Balancer              │
-│                    (NGINX or AWS ALB)                        │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────────────┐
-│                   Node.js Backend Services                   │
-│  ┌──────────────┬──────────────┬─────────────┬────────────┐│
-│  │ Ride Service │ Driver Svc   │ Payment Svc │ Notif. Svc ││
-│  └──────────────┴──────────────┴─────────────┴────────────┘│
-└───┬────────────┬─────────────┬──────────────┬──────────────┘
-    │            │             │              │
-┌───▼────┐  ┌───▼─────┐  ┌───▼────┐    ┌───▼─────┐
-│PostgreSQL│  │  Redis  │  │ Message│    │New Relic│
-│(Primary) │  │ (Cache/ │  │ Queue  │    │Monitoring│
-│          │  │  Geospatial)│(Optional)│   │         │
-└──────────┘  └─────────┘  └────────┘    └─────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     React Frontend Layer                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │  Rider App   │  │  Driver App  │  │  Admin Panel │         │
+│  │  (Web/Mobile)│  │  (Mobile)    │  │  (Dashboard) │         │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘         │
+└─────────┼──────────────────┼──────────────────┼─────────────────┘
+          │                  │                  │
+          └──────────────────┼──────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────┐
+│                   API Gateway / Load Balancer                     │
+│              (NGINX with Rate Limiting & SSL)                     │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────┐
+│                  Node.js Backend Services Layer                   │
+│  ┌─────────────┬──────────────┬──────────────┬─────────────┐   │
+│  │ Ride Service│ Driver Service│Payment Service│Notification │   │
+│  │             │               │              │   Service   │   │
+│  │ - Create    │ - Location    │ - Process    │ - WebSocket │   │
+│  │ - Match     │ - Status      │ - Refund     │ - Push      │   │
+│  │ - Cancel    │ - Accept      │ - Receipt    │ - Email     │   │
+│  └─────────────┴──────────────┴──────────────┴─────────────┘   │
+└──────┬──────────────┬─────────────┬──────────────┬──────────────┘
+       │              │             │              │
+┌──────▼─────┐  ┌────▼──────┐  ┌───▼────┐   ┌───▼──────┐
+│ PostgreSQL │  │   Redis   │  │ BullMQ │   │New Relic │
+│  (Primary) │  │  (Cache/  │  │(Queues)│   │(Monitoring)│
+│            │  │ Geospatial│  │        │   │          │
+│ - ACID     │  │ - Sub-ms  │  │- Async │   │- APM     │
+│ - PostGIS  │  │ - Pub/Sub │  │- Jobs  │   │- Metrics │
+└────────────┘  └───────────┘  └────────┘   └──────────┘
+```
+
+### Service Architecture (Microservices Pattern)
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Ride Service                        │
+│  • Create ride requests                             │
+│  • Driver matching (with retry logic)               │
+│  • Ride lifecycle management                        │
+│  • Fare estimation                                  │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│                 Driver Service                       │
+│  • Real-time location updates (batch processing)    │
+│  • Availability management                          │
+│  • Ride acceptance/rejection                        │
+│  • Earnings tracking                                │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│                  Trip Service                        │
+│  • Trip start/end with OTP verification             │
+│  • Real-time fare calculation                       │
+│  • Route tracking                                   │
+│  • Receipt generation                               │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│                Payment Service                       │
+│  • Idempotent payment processing                    │
+│  • PSP integration (Stripe/Razorpay)               │
+│  • Refund management                                │
+│  • Transaction history                              │
+└─────────────────────────────────────────────────────┘
 ```
 
 ## 2. Core Components & Tech Stack
@@ -50,25 +99,65 @@
 
 ### Database Layer
 
-**PostgreSQL (Primary Database) + PostGis + Prisma ORM**
+**PostgreSQL (Primary Database) + PostGIS + Prisma ORM**
 ```
 Tables:
-- riders (id, name, phone, email, payment_methods)
-- drivers (id, name, phone, vehicle_info, status, current_location)
-- rides (id, rider_id, pickup_location, dropoff_location, status, tier, created_at)
-- trips (id, ride_id, driver_id, start_time, end_time, fare, distance)
+- riders (id, name, phone, email, rating, total_rides)
+- drivers (id, name, phone, vehicle_info, status, current_location, rating)
+- rides (id, rider_id, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, status, ride_type, surge_multiplier)
+- trips (id, ride_id, driver_id, start_time, end_time, fare, distance, driver_earnings)
 - payments (id, trip_id, amount, status, psp_transaction_id, idempotency_key)
-- driver_locations (driver_id, lat, lng, timestamp) - partitioned by timestamp
+- payment_methods (id, rider_id, type, card_token, upi_id, is_default)
+- driver_locations (driver_id, lat, lng, timestamp, heading, speed) - partitioned by timestamp
+- notifications (id, rider_id, driver_id, type, message, is_read)
+- ride_events (id, ride_id, event_type, event_data, timestamp)
+- pricing_configs (id, region, ride_type, base_fare, per_km_rate, per_min_rate)
+- surge_zones (id, region, boundaries, current_surge, active_rides, available_drivers)
+
+Indexes (for performance):
+- rides(status, created_at DESC) - Active rides dashboard
+- rides(rider_id, created_at DESC) - Rider history
+- drivers(status, current_lat, current_lng) - Nearby driver search
+- driver_locations(driver_id, timestamp DESC) - Recent locations
+- payments(idempotency_key) - Prevent duplicate payments
 ```
 
 **Redis (Caching & Geospatial)**
 ```
 Use Cases:
-- Geospatial indexing: GEOADD drivers:available {lng} {lat} {driver_id}
-- Active rides cache: rides:{ride_id}
-- Driver availability: drivers:available:{driver_id}
-- Rate limiting & idempotency keys
-- Session management
+- Geospatial indexing: 
+  * Key: "drivers:available"
+  * Command: GEOADD drivers:available {lng} {lat} {driver_id}
+  * Query: GEORADIUS drivers:available {lng} {lat} 5 km WITHDIST ASC
+
+- Ride caching:
+  * Key: "ride:{ride_id}"
+  * TTL: 300-3600 seconds
+  * Invalidate on status change
+
+- Driver metadata:
+  * Key: "driver:{driver_id}:meta"
+  * Fields: {lat, lng, status, lastUpdate, rating}
+  * TTL: 300 seconds
+
+- Idempotency:
+  * Key: "payment:{idempotency_key}"
+  * TTL: 3600 seconds
+  * Prevents duplicate payments
+
+- Rate limiting:
+  * Key: "ratelimit:{identifier}"
+  * Algorithm: Sliding window with sorted sets
+  * Limit: 100 requests per 60 seconds
+
+- Distributed locks:
+  * Key: "lock:{resource_id}"
+  * TTL: 10 seconds
+  * Prevents race conditions in ride matching
+
+- Pub/Sub channels:
+  * Channel: "ride:{ride_id}" - Ride status updates
+  * Channel: "location:{driver_id}" - Driver location updates
 ```
 
 ## 3. Key Workflows
