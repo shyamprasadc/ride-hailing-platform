@@ -7,6 +7,7 @@ import {
   NotFoundResponse,
   BadRequestResponse,
   ForbiddenResponse,
+  UnprocessableEntityResponse,
   TooManyRequestsResponse,
 } from './ApiResponse';
 
@@ -21,6 +22,7 @@ enum ErrorType {
   NO_DATA = 'NoDataError',
   BAD_REQUEST = 'BadRequestError',
   FORBIDDEN = 'ForbiddenError',
+  UNPROCESSABLE_ENTITY = 'UnprocessableEntityError',
   TOO_MANY_REQUESTS = 'TooManyRequestsError',
 }
 
@@ -47,6 +49,8 @@ export abstract class ApiError extends Error {
         return new BadRequestResponse(err.message).send(res);
       case ErrorType.FORBIDDEN:
         return new ForbiddenResponse(err.message).send(res);
+      case ErrorType.UNPROCESSABLE_ENTITY:
+        return new UnprocessableEntityResponse(err.message).send(res);
       case ErrorType.TOO_MANY_REQUESTS:
         return new TooManyRequestsResponse(err.message).send(res);
       default: {
@@ -86,6 +90,12 @@ export class NotFoundError extends ApiError {
 export class ForbiddenError extends ApiError {
   constructor(message = 'Permission denied') {
     super(ErrorType.FORBIDDEN, message);
+  }
+}
+
+export class UnprocessableEntityError extends ApiError {
+  constructor(message = 'Unprocessable Entity') {
+    super(ErrorType.UNPROCESSABLE_ENTITY, message);
   }
 }
 

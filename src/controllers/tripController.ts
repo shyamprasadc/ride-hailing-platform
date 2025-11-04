@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import asyncHandler from '../helpers/asyncHandler';
 import { StartTripRequest, EndTripRequest } from '../core/Types';
 import { SuccessResponse } from '../core/ApiResponse';
-import { BadRequestError } from '../core/ApiError';
 import * as tripService from '../services/tripService';
 
 /**
@@ -18,10 +17,6 @@ const startTrip = asyncHandler(async (req: Request, res: Response) => {
   };
 
   const result = await tripService.startTrip(request);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to start trip');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });
@@ -42,10 +37,6 @@ const endTrip = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await tripService.endTrip(request);
 
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to end trip');
-  }
-
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -57,10 +48,6 @@ const getTrip = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const result = await tripService.getTripById(id);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to get trip');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });

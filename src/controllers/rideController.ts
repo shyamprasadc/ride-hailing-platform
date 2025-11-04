@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import asyncHandler from '../helpers/asyncHandler';
 import { CreateRideRequest, RideType, CancelRideRequest } from '../core/Types';
 import { SuccessResponse } from '../core/ApiResponse';
-import { BadRequestError } from '../core/ApiError';
 import * as rideService from '../services/rideService';
 
 /**
@@ -23,10 +22,6 @@ const createRide = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await rideService.createRide(request);
 
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to create ride');
-  }
-
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -38,10 +33,6 @@ const getRide = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const result = await rideService.getRideById(id);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to get ride');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });
@@ -60,10 +51,6 @@ const getRiderHistory = asyncHandler(async (req: Request, res: Response) => {
     limit,
   });
 
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to get ride history');
-  }
-
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -81,10 +68,6 @@ const cancelRide = asyncHandler(async (req: Request, res: Response) => {
   };
 
   const result = await rideService.cancelRide(request);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to get cancel ride');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });

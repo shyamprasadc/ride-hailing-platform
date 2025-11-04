@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import asyncHandler from '../helpers/asyncHandler';
 import { ProcessPaymentRequest } from '../core/Types';
 import { SuccessResponse } from '../core/ApiResponse';
-import { BadRequestError } from '../core/ApiError';
 import { paymentService } from '../services/paymentService';
 
 /**
@@ -18,10 +17,6 @@ const processPayment = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await paymentService.processPayment(request);
 
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to process payment');
-  }
-
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -33,10 +28,6 @@ const getPaymentByTrip = asyncHandler(async (req: Request, res: Response) => {
   const { tripId } = req.params;
 
   const result = await paymentService.getPaymentByTripId(tripId);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to get payment for trip');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });
@@ -50,10 +41,6 @@ const retryPayment = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await paymentService.retryPayment(id);
 
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to retry payment');
-  }
-
   return new SuccessResponse('OK', result.data).send(res);
 });
 
@@ -66,10 +53,6 @@ const refundPayment = asyncHandler(async (req: Request, res: Response) => {
   const { amount, reason } = req.body;
 
   const result = await paymentService.processRefund(id, amount, reason);
-
-  if (!result.success || !result.data) {
-    throw new BadRequestError('Failed to process refund');
-  }
 
   return new SuccessResponse('OK', result.data).send(res);
 });
